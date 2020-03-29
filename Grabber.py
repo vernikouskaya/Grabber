@@ -1,5 +1,9 @@
 import time
+from datetime import datetime
+
 import cv2
+
+from DicomWriter import DicomWriter
 
 
 class Grabber:
@@ -37,8 +41,10 @@ class Grabber:
                 print("frame not grabbed")
             else:
                 gray = cv2.cvtColor(read, cv2.COLOR_BGR2GRAY)
+                writer.write(gray)
                 cv2.imshow('color', read)
                 cv2.imshow('gray', gray)
+
                 self.numFrames += 1
 
             if (self.numFrames % self.statDelay == 0):
@@ -57,6 +63,9 @@ class Grabber:
         print("average FPS: ", self.numFrames / timeDiff)
 
 if __name__ == '__main__':
+    folder = datetime.now().strftime("%Y%m%d_%H%M%S")
+    writer = DicomWriter()
+    writer.initialize(folder)
     grabber = Grabber(input=0)
     grabber.initialize()
     grabber.grab()
