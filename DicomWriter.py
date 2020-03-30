@@ -46,11 +46,11 @@ class DicomWriter:
         file_meta = Dataset()
         file_meta.FileMetaInformationGroupLength = 204
         file_meta.FileMetaInformationVersion = b'\x00\x01'
-        # file_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2'
-        # file_meta.MediaStorageSOPInstanceUID = '2.25.64478777239060462373300680991826309705'
-        # file_meta.TransferSyntaxUID = '1.2.840.10008.1.2.1'
-        # file_meta.ImplementationClassUID = '2.25.190146791043182537444806132342625375407'
-        # file_meta.ImplementationVersionName = 'VTK_DICOM_0_8_6'
+        file_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2'
+        file_meta.MediaStorageSOPInstanceUID = '2.25.64478777239060462373300680991826309705'
+        file_meta.TransferSyntaxUID = '1.2.840.10008.1.2.1'
+        file_meta.ImplementationClassUID = '2.25.190146791043182537444806132342625375407'
+        #file_meta.ImplementationVersionName = 'VTK_DICOM_0_8_6'
         # Main data elements
         ds = Dataset()
         ds.ImageType = ['DERIVED', 'SECONDARY', 'OTHER']

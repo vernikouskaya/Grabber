@@ -41,9 +41,14 @@ class Grabber:
                 print("frame not grabbed")
             else:
                 gray = cv2.cvtColor(read, cv2.COLOR_BGR2GRAY)
+                geometry = gray[168:423, 0:255]
+                #cv2.imwrite('geometry.png', geometry)
+                #text = pytesseract.image_to_string(geometry)
+                #print(text)
                 writer.write(gray)
-                cv2.imshow('color', read)
+                #cv2.imshow('color', read)
                 cv2.imshow('gray', gray)
+                cv2.imshow('geometry', geometry)
 
                 self.numFrames += 1
 
