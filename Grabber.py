@@ -42,6 +42,7 @@ class Grabber:
             else:
                 gray = cv2.cvtColor(read, cv2.COLOR_BGR2GRAY)
                 geometry = gray[168:423, 0:255]
+                #geometry = gray[168:210, 0:255] #primAngle
                 #cv2.imwrite('geometry.png', geometry)
                 #text = pytesseract.image_to_string(geometry)
                 #print(text)
