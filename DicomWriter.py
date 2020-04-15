@@ -64,8 +64,8 @@ class DicomWriter:
         self.ds.PixelSpacing = [0.110726, 0.110726]         # demonstrator
         self.ds.ImagerPixelSpacing = [0.110726, 0.110726]   # original
 
-        self.ds.Rows = 1024                  #image width
-        self.ds.Columns = 1280               #image height
+        self.ds.Rows = pixelData.shape[0]                 #image height
+        self.ds.Columns = pixelData.shape[1]               #image width
 
         self.ds.PixelData = pixelData
         self.frameNumber += 1
