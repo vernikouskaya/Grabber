@@ -23,42 +23,50 @@ class DicomWriter:
         if not os.path.exists(self.folderName):
             os.makedirs(self.folderName)
 
-    def write(self, pixelData):
+    def write(self, pixelData, primAngle, secAngle, long, lat, height, SID, FD):        ##not forget spacing!!!
         # File meta info data elements
         datetimeNow = datetime.now()
         self.ds.InstanceCreationDate = datetimeNow.strftime("%Y%m%d")   #grabbing date
         self.ds.InstanceCreationTime = datetimeNow.strftime("%H%M%S")  #grabbing time
         # primary angulation
-        self.ds.StudyDate = '0'                 #demonstrator
-        self.ds.PositionerPrimaryAngle = "39.9" #original
+        self.ds.StudyDate = primAngle                 #demonstrator
+        self.ds.PositionerPrimaryAngle = primAngle     #original
         # secondary angulation
-        self.ds.StudyTime = '0'                     #demonstrator
-        self.ds.PositionerSecondaryAngle = "0.2"    #original
+        self.ds.StudyTime = secAngle                     #demonstrator
+        self.ds.PositionerSecondaryAngle = secAngle    #original
 
         # distance source to patient
         self.ds.KVP = "810.0"                       #demonstrator
         self.ds.DistanceSourceToPatient = "810.0"   #original
         # distance source to detector
-        self.ds.DistanceSourceToDetector = "1200.0"  # original + demonstrator
+        self.ds.DistanceSourceToDetector = SID  # original + demonstrator
 
         # table position demonstrator
-        self.ds.StudyID = '60'               # vertical table pos
-        self.ds.SeriesNumber = "-760"        # longitudinal table pos
-        self.ds.AcquisitionNumber = "-110"   # lateral table pos
+        self.ds.StudyID = '60'  # vertical table pos
+        self.ds.SeriesNumber = "-760"  # longitudinal table pos
+        self.ds.AcquisitionNumber = "-110"  # lateral table pos
+
+        # self.ds.StudyID = height               # vertical table pos
+        # self.ds.SeriesNumber = long        # longitudinal table pos
+        # self.ds.AcquisitionNumber = lat   # lateral table pos
 
         # table position original
         tableSeq = Sequence()
         self.ds.add_new([0x2003, 0x102E], 'SQ', tableSeq)  # original
         tableDataSet = Dataset()
-        tableDataSet.add_new([0x300A, 0x0128], 'DS', "0")   # vertical table pos
-        tableDataSet.add_new([0x300A, 0x0129], 'DS', "-760")   # longitudinal table pos
+        tableDataSet.add_new([0x300A, 0x0128], 'DS', "0")  # vertical table pos
+        tableDataSet.add_new([0x300A, 0x0129], 'DS', "-760")  # longitudinal table pos
         tableDataSet.add_new([0x300A, 0x012A], 'DS', "-110")  # lateral table pos
+        # tableDataSet.add_new([0x300A, 0x0128], 'DS', height)   # vertical table pos
+        # tableDataSet.add_new([0x300A, 0x0129], 'DS', long)   # longitudinal table pos
+        # tableDataSet.add_new([0x300A, 0x012A], 'DS', lat)  # lateral table pos
         tableSeq.append(tableDataSet)
 
         # field distance
-        self.ds.PositionReferenceIndicator = '15'               #demonstrator
-        self.ds.add_new([0x2003, 0x1003], 'LO', "FD 15 cm")     # original
-        self.ds.add_new([0x2003, 0x1010], 'LO', "FD 15 cm")     #original
+        self.ds.PositionReferenceIndicator = FD               #demonstrator
+        FDstr = "FD " + FD + " cm"
+        self.ds.add_new([0x2003, 0x1003], 'LO', FDstr)     # original
+        self.ds.add_new([0x2003, 0x1010], 'LO', FDstr)     #original
 
         # pixel spacing
         self.ds.PixelSpacing = [0.110726, 0.110726]         # demonstrator
