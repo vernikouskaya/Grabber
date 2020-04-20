@@ -100,6 +100,21 @@ class Grabber:
             }
         return switcher.get(number, "invalid character")
 
+    def pxlSpacing(self, FD):
+        switcher = {
+            15: 0.110726,
+            19: 0.132902,
+            20: 0.1323,
+            22: 0.15631,
+            25: 0.17498,
+            27: 0.187775,
+            31: 0.22025,
+            37: 0.259644,
+            42: 0.292908,
+            48: 0.3795,
+            }
+        return switcher.get(FD, "invalid character")
+
     def extract_values_from_row(self, geometry, number, yCoord):
         rect_width = 19
         rect_height = 31
@@ -135,6 +150,79 @@ class Grabber:
         else:
             return m, p
 
+    def recognize_characters(self, geometry, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird):
+
+        # some points for differentiation within geometry template
+        degreeSign = (243, 9)  # angulation or table position
+        LAORAO = (12, 11)  # LAO or RAO
+        CAUDCRAN = (24, 61)  # CAUD or CRAN
+        primAngle = 0
+        secAngle = 0
+        long = 0
+        lat = 0
+        height = 0
+        SID = 0
+        FD = 0
+        #pxlSpacing = [0.110726, 0.110726]
+        pxlSpacing = 0.110726
+
+        if geometry[degreeSign[1], degreeSign[0]] == self.font:  # angulation
+            # primary angulation
+            if geometry[LAORAO[1], LAORAO[0]] == self.font:  # RAO
+                primAngle = -(firstRowSec * 10 + firstRowThird)
+            else:
+                primAngle = firstRowSec * 10 + firstRowThird  # LAO
+            # secondary angulation
+            if geometry[CAUDCRAN[1], CAUDCRAN[0]] == self.font:  # KRAN
+                secAngle = secondRowSec * 10 + secondRowThird
+            else:
+                secAngle = -(secondRowSec * 10 + secondRowThird)  # CAUD
+
+        else:
+            if firstRowSec == -1:  # table
+                long = -firstRowThird
+            else:
+                long = -(firstRowSec * 10 + firstRowThird)
+            long = 10 * long
+            if secondRowFirst == 0:
+                if secondRowSec >= 0:
+                    lat = secondRowThird
+                else:
+                    lat = -secondRowThird
+            else:
+                if secondRowFirst >= 0:
+                    lat = secondRowSec * 10 + secondRowThird
+                else:
+                    lat = -(secondRowSec * 10 + secondRowThird)
+            lat = 10 * lat
+        #print("primAngle = ", primAngle)
+        #print("longTable", long)
+        #print("secAngle = ", secAngle)
+        #print("latTable", lat)
+
+        if thirdRowFirst == 0:
+            if thirdRowSec >= 0:
+                height = thirdRowThird
+            else:
+                height = -thirdRowThird
+        else:
+            if thirdRowFirst >= 0:
+                height = thirdRowSec * 10 + thirdRowThird
+            else:
+                height = -(thirdRowSec * 10 + thirdRowThird)
+        height = 10 * height
+        #print("heightTable = ", height)
+
+        SID = forthRowFirst * 100 + forthRowSec * 10 + forthRowThird
+        SID = 10 * SID
+        FD = fifthRowSec * 10 + fifthRowThird
+        #print("SID = ", SID)
+        #print("FD = ", FD)
+
+        pxlSpacing = self.pxlSpacing(FD)
+        #print("pxlSpacing = ", pxlSpacing)
+
+        return primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing
 
     def grab(self):
         if not (self.initialized):
@@ -154,17 +242,6 @@ class Grabber:
 
                 init_template = 10
                 template_shift = 49
-                # some points for differentiation within geometry template
-                degreeSign = (243, 9)  # angulation or table position
-                LAORAO = (12, 11)  # LAO or RAO
-                CAUDCRAN = (24, 61)  # CAUD or CRAN
-                primAngle = 0
-                secAngle = 0
-                long = 0
-                lat = 0
-                height = 0
-                SID = 0
-                FD = 0
 
                 # geometry_new = np.copy(geometry)
                 # geometry_new = cv2.circle(geometry_new, (243, 9), 1, [255, 0, 0], -1)
@@ -172,61 +249,14 @@ class Grabber:
 
                 firstRowSec, firstRowThird = self.extract_values_from_row(geometry, 2, init_template)                     # (LAO/RAO)
                 secondRowFirst, secondRowSec, secondRowThird = self.extract_values_from_row(geometry, 3, init_template + template_shift)  # (KAUD/CRAN)
-                if geometry[degreeSign[1], degreeSign[0]] == self.font: #angulation
-                    # primary angulation
-                    if geometry[LAORAO[1],LAORAO[0]] == self.font:      #RAO
-                        primAngle = -(firstRowSec*10 + firstRowThird)
-                    else:
-                        primAngle = firstRowSec * 10 + firstRowThird    #LAO
-                    # secondary angulation
-                    if geometry[CAUDCRAN[1],CAUDCRAN[0]] == self.font:      #KRAN
-                        secAngle = secondRowSec*10 + secondRowThird
-                    else:
-                        secAngle = -(secondRowSec * 10 + secondRowThird)    #CAUD
-
-                else:
-                    if firstRowSec == -1:                             #table
-                        long = -firstRowThird
-                    else:
-                        long = -(firstRowSec*10 + firstRowThird)
-                    long = 10*long
-                    if secondRowFirst == 0:
-                        if secondRowSec >= 0:
-                            lat = secondRowThird
-                        else:
-                            lat = -secondRowThird
-                    else:
-                        if secondRowFirst >= 0:
-                            lat = secondRowSec * 10 + secondRowThird
-                        else:
-                            lat = -(secondRowSec * 10 + secondRowThird)
-                    lat = 10*lat
-                print("primAngle = ", primAngle)
-                print("longTable", long)
-                print("secAngle = ", secAngle)
-                print("latTable", lat)
                 thirdRowFirst, thirdRowSec, thirdRowThird = self.extract_values_from_row(geometry, 3, init_template + 2*template_shift)  # (TableHigh)
-                if thirdRowFirst == 0:
-                    if thirdRowSec >= 0:
-                        height = thirdRowThird
-                    else:
-                        height = -thirdRowThird
-                else:
-                    if thirdRowFirst >= 0:
-                        height = thirdRowSec * 10 + thirdRowThird
-                    else:
-                        height = -(thirdRowSec * 10 + thirdRowThird)
-                height = 10*height
-                print("heightTable = ", height)
                 forthRowFirst, forthRowSec, forthRowThird = self.extract_values_from_row(geometry, 3, init_template + 3*template_shift)  # (SID)
-                SID = forthRowFirst*100 + forthRowSec * 10 + forthRowThird
-                SID = 10*SID
                 fifthRowSec, fifthRowThird = self.extract_values_from_row(geometry, 2, init_template + 4*template_shift)  # (FD)
-                FD = fifthRowSec * 10 + fifthRowThird
-                print("SID = ", SID)
-                print("FD", FD)
 
-                writer.write(np.ascontiguousarray(gray_cut), str(primAngle), str(secAngle), str(long), str(lat), str(height), str(SID), str(FD))
+                # distinguish and calculate geometry parameters
+                primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing = self.recognize_characters(geometry, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
+
+                writer.write(np.ascontiguousarray(gray_cut), str(primAngle), str(secAngle), str(long), str(lat), str(height), str(SID), str(FD), str(pxlSpacing))
                 self.numFrames += 1
 
             if (self.numFrames % self.statDelay == 0):

@@ -10,6 +10,8 @@ from pydicom.dataset import Dataset
 from pydicom.sequence import Sequence
 from pydicom.tag import Tag
 
+#https://github.com/ivmartel/dwv/wiki/Error-Messages
+#####gdcmconv - -raw - i { in -dcm_file_path} -o {out - dcm_file_path}
 
 class DicomWriter:
 
@@ -23,7 +25,7 @@ class DicomWriter:
         if not os.path.exists(self.folderName):
             os.makedirs(self.folderName)
 
-    def write(self, pixelData, primAngle, secAngle, long, lat, height, SID, FD):        ##not forget spacing!!!
+    def write(self, pixelData, primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing):        ##not forget spacing!!!
         # File meta info data elements
         datetimeNow = datetime.now()
         self.ds.InstanceCreationDate = datetimeNow.strftime("%Y%m%d")   #grabbing date
