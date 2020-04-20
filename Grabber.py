@@ -158,13 +158,13 @@ class Grabber:
                 degreeSign = (243, 9)  # angulation or table position
                 LAORAO = (12, 11)  # LAO or RAO
                 CAUDCRAN = (24, 61)  # CAUD or CRAN
-                primAngle = None
-                secAngle = None
-                long = None
-                lat = None
-                height = None
-                SID = None
-                FD = None
+                primAngle = 0
+                secAngle = 0
+                long = 0
+                lat = 0
+                height = 0
+                SID = 0
+                FD = 0
 
                 # geometry_new = np.copy(geometry)
                 # geometry_new = cv2.circle(geometry_new, (243, 9), 1, [255, 0, 0], -1)
@@ -189,6 +189,7 @@ class Grabber:
                         long = -firstRowThird
                     else:
                         long = -(firstRowSec*10 + firstRowThird)
+                    long = 10*long
                     if secondRowFirst == 0:
                         if secondRowSec >= 0:
                             lat = secondRowThird
@@ -199,11 +200,11 @@ class Grabber:
                             lat = secondRowSec * 10 + secondRowThird
                         else:
                             lat = -(secondRowSec * 10 + secondRowThird)
-
-                # print("primAngle = ", primAngle)
-                # print("longTable", long)
-                # print("secAngle = ", secAngle)
-                # print("latTable", lat)
+                    lat = 10*lat
+                print("primAngle = ", primAngle)
+                print("longTable", long)
+                print("secAngle = ", secAngle)
+                print("latTable", lat)
                 thirdRowFirst, thirdRowSec, thirdRowThird = self.extract_values_from_row(geometry, 3, init_template + 2*template_shift)  # (TableHigh)
                 if thirdRowFirst == 0:
                     if thirdRowSec >= 0:
@@ -215,13 +216,15 @@ class Grabber:
                         height = thirdRowSec * 10 + thirdRowThird
                     else:
                         height = -(thirdRowSec * 10 + thirdRowThird)
-                #print("heightTable = ", height)
+                height = 10*height
+                print("heightTable = ", height)
                 forthRowFirst, forthRowSec, forthRowThird = self.extract_values_from_row(geometry, 3, init_template + 3*template_shift)  # (SID)
                 SID = forthRowFirst*100 + forthRowSec * 10 + forthRowThird
+                SID = 10*SID
                 fifthRowSec, fifthRowThird = self.extract_values_from_row(geometry, 2, init_template + 4*template_shift)  # (FD)
                 FD = fifthRowSec * 10 + fifthRowThird
-                #print("SID = ", SID)
-                #print("FD", FD)
+                print("SID = ", SID)
+                print("FD", FD)
 
                 writer.write(np.ascontiguousarray(gray_cut), str(primAngle), str(secAngle), str(long), str(lat), str(height), str(SID), str(FD))
                 self.numFrames += 1
