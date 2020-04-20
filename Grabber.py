@@ -163,8 +163,8 @@ class Grabber:
         height = 0
         SID = 0
         FD = 0
-        #pxlSpacing = [0.110726, 0.110726]
-        pxlSpacing = 0.110726
+        pxlSpacing = [0.110726, 0.110726]
+        #pxlSpacing = 0.110726
 
         if geometry[degreeSign[1], degreeSign[0]] == self.font:  # angulation
             # primary angulation
@@ -219,7 +219,8 @@ class Grabber:
         #print("SID = ", SID)
         #print("FD = ", FD)
 
-        pxlSpacing = self.pxlSpacing(FD)
+        spacing = self.pxlSpacing(FD)
+        pxlSpacing[0] = pxlSpacing[1] = spacing
         #print("pxlSpacing = ", pxlSpacing)
 
         return primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing
@@ -256,7 +257,13 @@ class Grabber:
                 # distinguish and calculate geometry parameters
                 primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing = self.recognize_characters(geometry, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
 
-                writer.write(np.ascontiguousarray(gray_cut), str(primAngle), str(secAngle), str(long), str(lat), str(height), str(SID), str(FD), str(pxlSpacing))
+                frontalORlateral = 0 # [0] - frontal, [1] - lateral
+                if frontalORlateral == 0:
+                    SPD = 810   # for frontal C-arm
+                else:
+                    SPD = 765   # for lateral C-arm and monoplane system
+
+                writer.write(np.ascontiguousarray(gray_cut), str(primAngle), str(secAngle), long, lat, height, str(SID), SPD, str(FD), pxlSpacing)
                 self.numFrames += 1
 
             if (self.numFrames % self.statDelay == 0):
