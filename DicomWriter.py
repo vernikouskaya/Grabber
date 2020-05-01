@@ -83,8 +83,7 @@ class DicomWriter:
         file_meta = Dataset()
         file_meta.FileMetaInformationGroupLength = 204
         file_meta.FileMetaInformationVersion = b'\x00\x01'
-        #file_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2'
-        SOPClassUID = generate_uid()
+        SOPClassUID = '1.2.840.10008.5.1.4.1.1.12.1'    # SOP Class Name: X-Ray Angiographic Image Storage
         file_meta.MediaStorageSOPClassUID = SOPClassUID
         #file_meta.MediaStorageSOPInstanceUID = '2.25.64478777239060462373300680991826309705' #actually (prefix=None) in 2.25
         SOPInstanceUID = generate_uid()
