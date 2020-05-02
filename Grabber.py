@@ -13,7 +13,7 @@ class Grabber:
     def __init__(self, input=0):
         self.input = input
         self.numFrames = 0
-        self.statDelay = 100 # print statistics every '''statDelay''' frames
+        self.statDelay = 50 # print statistics every '''statDelay''' frames
         self.capture = None
         self.initialized = False
         self.imageHeight = 1024
@@ -66,20 +66,18 @@ class Grabber:
         thresh = 50 # larger than light gray and smaller than white
 
         if min < thresh:
-            #thresh, binary_image_out = cv2.threshold(row, min, 255, cv2.THRESH_BINARY)    # black font on dark gray BG - > convert to: gray = 1, black = 0
+            # black font on dark gray BG - > convert to: gray = 1, black = 0
             thresh, binary_image_out = cv2.threshold(row, max-5, 255, cv2.THRESH_BINARY)
-            #binary_image_out = np.invert(binary_image)
             self.font = min
 
         else:
-            thresh, binary_image_out = cv2.threshold(row, min, 255, cv2.THRESH_BINARY_INV)        # white font on light gray BG - > convert to: white = 1, gray = 0
-            #binary_image_out = np.invert(binary_image)                                      # invert image: gray = 1, white = 0
+            # white font on light gray BG - > invert and convert to: gray = 1, white = 0
+            thresh, binary_image_out = cv2.threshold(row, min, 255, cv2.THRESH_BINARY_INV)
             self.font = max
 
         #cv2.imshow("binary", binary_image_out)
-        #cv2.imwrite('notInvertedBinary.png', binary_image)
         #cv2.imwrite('row.png', row)
-        #cv2.imwrite('binary_wrongIntensity.png', binary_image_out)
+        #cv2.imwrite('binary.png, binary_image_out)
         return binary_image_out
 
     def normReco(self, number):
