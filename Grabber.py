@@ -20,7 +20,7 @@ class Grabber:
         self.imageWidth = 1280
         self.geometrySize = 255
         self.threshold = 10     # initial value greater than black
-        self.font = 0           #is set during convertion to binary: to MIN (or black font on the tamplate) or to MAX (or black font on the tamplate)
+        self.fontSet = self.font = 0           #is set during convertion to binary: to MIN (or black font on the tamplate) or to MAX (or black font on the tamplate)
 
     def initialize(self):
         print("initializing grabber on interface #", self.input)
@@ -166,14 +166,14 @@ class Grabber:
         pxlSpacing = [0.110726, 0.110726]
         #pxlSpacing = 0.110726
 
-        if geometry[degreeSign[1], degreeSign[0]] == self.font:  # angulation
+        if geometry[degreeSign[1], degreeSign[0]] == self.fontSet:  # angulation
             # primary angulation
-            if geometry[LAORAO[1], LAORAO[0]] == self.font:  # RAO
+            if geometry[LAORAO[1], LAORAO[0]] == self.fontSet:  # RAO
                 primAngle = -(firstRowSec * 10 + firstRowThird)
             else:
                 primAngle = firstRowSec * 10 + firstRowThird  # LAO
             # secondary angulation
-            if geometry[CAUDCRAN[1], CAUDCRAN[0]] == self.font:  # KRAN
+            if geometry[CAUDCRAN[1], CAUDCRAN[0]] == self.fontSet:  # KRAN
                 secAngle = secondRowSec * 10 + secondRowThird
             else:
                 secAngle = -(secondRowSec * 10 + secondRowThird)  # CAUD
@@ -249,6 +249,7 @@ class Grabber:
                 # cv2.imwrite("LAOTable.png", geometry_new)
 
                 firstRowSec, firstRowThird = self.extract_values_from_row(geometry, 2, init_template)                     # (LAO/RAO)
+                self.fontSet = self.font
                 secondRowFirst, secondRowSec, secondRowThird = self.extract_values_from_row(geometry, 3, init_template + template_shift)  # (KAUD/CRAN)
                 thirdRowFirst, thirdRowSec, thirdRowThird = self.extract_values_from_row(geometry, 3, init_template + 2*template_shift)  # (TableHigh)
                 forthRowFirst, forthRowSec, forthRowThird = self.extract_values_from_row(geometry, 3, init_template + 3*template_shift)  # (SID)
