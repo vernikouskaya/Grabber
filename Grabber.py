@@ -13,7 +13,7 @@ class Grabber:
     def __init__(self, input=0):
         self.input = input
         self.numFrames = 0
-        self.statDelay = 30 # print statistics every '''statDelay''' frames
+        self.statDelay = 100 # print statistics every '''statDelay''' frames
         self.capture = None
         self.initialized = False
         self.imageHeight = 1024
@@ -66,39 +66,39 @@ class Grabber:
         thresh = 50 # larger than light gray and smaller than white
 
         if min < thresh:
-            thresh, binary_image_out = cv2.threshold(row, min, 255, cv2.THRESH_BINARY)    # black font on dark gray BG - > convert to: gray = 1, black = 0
+            #thresh, binary_image_out = cv2.threshold(row, min, 255, cv2.THRESH_BINARY)    # black font on dark gray BG - > convert to: gray = 1, black = 0
+            thresh, binary_image_out = cv2.threshold(row, max-5, 255, cv2.THRESH_BINARY)
             #binary_image_out = np.invert(binary_image)
             self.font = min
 
         else:
-            thresh, binary_image = cv2.threshold(row, max-1, 255, cv2.THRESH_BINARY)        # white font on light gray BG - > convert to: white = 1, gray = 0
-            binary_image_out = np.invert(binary_image)                                      # invert image: gray = 1, white = 0
+            thresh, binary_image_out = cv2.threshold(row, min, 255, cv2.THRESH_BINARY_INV)        # white font on light gray BG - > convert to: white = 1, gray = 0
+            #binary_image_out = np.invert(binary_image)                                      # invert image: gray = 1, white = 0
             self.font = max
 
         #cv2.imshow("binary", binary_image_out)
         #cv2.imwrite('notInvertedBinary.png', binary_image)
         #cv2.imwrite('row.png', row)
-        #cv2.imwrite('binary.png', binary_image_out)
+        #cv2.imwrite('binary_wrongIntensity.png', binary_image_out)
         return binary_image_out
 
     def normReco(self, number):
         switcher = {
-            5023: 1,
-            4912: 2,
-            4984: 3,
-            4626: 4,
-            4764: 5,
-            4839: 6,
-            #4879: 6,
-            5176: 7,
-            4640: 8,
-            4812: 9,
-            4654: 0,
+            4939: 1,
+            4497: 2,
+            4483: 3,
+            4417: 4,
+            4454: 5,
+            4290: 6,
+            4892: 7,
+            3851: 8,
+            4245: 9,
+            4080: 0,
             5975: -1,  # "-" #
-            #5975: -1,  # "+" #
-            0: 0,   # empty
+            5570: 0,  # "+" #
+            6189: 0,   # empty
             }
-        return switcher.get(number, "invalid character")
+        return switcher.get(number, -999)
 
     def pxlSpacing(self, FD):
         switcher = {
@@ -113,7 +113,12 @@ class Grabber:
             42: 0.292908,
             48: 0.3795,
             }
-        return switcher.get(FD, "invalid character")
+        return switcher.get(FD, -999)
+
+    def invalid_character(self, third = None, second = None, first = None):
+        if first == -999 or second == -999 or third == -999:
+            print("invalid character")
+            return 0
 
     def extract_values_from_row(self, geometry, number, yCoord):
         rect_width = 19
@@ -179,11 +184,15 @@ class Grabber:
                 secAngle = -(secondRowSec * 10 + secondRowThird)  # CAUD
 
         else:
-            if firstRowSec == -1:  # table
+            if self.invalid_character(firstRowThird, firstRowSec):
+                long = -999
+            elif firstRowSec == -1:  # table
                 long = -firstRowThird
             else:
                 long = -(firstRowSec * 10 + firstRowThird)
             long = 10 * long
+            if self.invalid_character(secondRowThird, secondRowSec, secondRowFirst):
+                lat = -999
             if secondRowFirst == 0:
                 if secondRowSec >= 0:
                     lat = secondRowThird
@@ -200,16 +209,15 @@ class Grabber:
         #print("secAngle = ", secAngle)
         #print("latTable", lat)
 
-        if thirdRowFirst == 0:
+        if self.invalid_character(thirdRowThird, thirdRowSec, thirdRowFirst):
+            height = -999
+        elif thirdRowFirst >= 0:
             if thirdRowSec >= 0:
-                height = thirdRowThird
+                height = thirdRowSec * 10 + thirdRowThird
             else:
                 height = -thirdRowThird
         else:
-            if thirdRowFirst >= 0:
-                height = thirdRowSec * 10 + thirdRowThird
-            else:
-                height = -(thirdRowSec * 10 + thirdRowThird)
+             height = -(thirdRowSec * 10 + thirdRowThird)
         height = 10 * height
         #print("heightTable = ", height)
 
@@ -220,8 +228,11 @@ class Grabber:
         #print("FD = ", FD)
 
         spacing = self.pxlSpacing(FD)
-        pxlSpacing[0] = pxlSpacing[1] = spacing
-        #print("pxlSpacing = ", pxlSpacing)
+        if self.invalid_character(spacing):
+            pxlSpacing[0] = pxlSpacing[1] = -999
+        else:
+            pxlSpacing[0] = pxlSpacing[1] = spacing
+            #print("pxlSpacing = ", pxlSpacing)
 
         return primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing
 
@@ -264,6 +275,7 @@ class Grabber:
                 else:
                     SPD = 765   # for lateral C-arm and monoplane system
 
+                #self.compare_images(gray_cut, gray_cut)
                 writer.write(np.ascontiguousarray(gray_cut), str(primAngle), str(secAngle), long, lat, height, str(SID), SPD, str(FD), pxlSpacing)
                 self.numFrames += 1
 
@@ -281,6 +293,32 @@ class Grabber:
         print("total time: ", timeDiff)
         print("total frames: ", self.numFrames)
         print("average FPS: ", self.numFrames / timeDiff)
+
+    def mse(self, imageA, imageB):
+        # the 'Mean Squared Error' between the two images is the
+        # sum of the squared difference between the two images;
+        # NOTE: the two images must have the same dimension
+        #if imageA.rows > 0 & imageA.rows == imageB.rows & imageA.cols > 0 & imageA.cols == imageB.cols:
+            err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
+            err /= float(imageA.shape[0] * imageA.shape[1])
+            # return the MSE, the lower the error, the more "similar"
+            # the two images are
+            return err
+        #else:
+            # two images have diff dimensions
+            #return 10000.0  #return a bad value
+
+    def compare_images(self, imageA, imageB):
+        # compute the mean squared error and structural similarity
+        # index for the images
+        m = self.mse(imageA, imageB)
+        if m == 0.0:
+            return 1
+        else:
+            return 0
+        # If image is identical to itself, MSE = 0.0 and SSIM = 1.0.
+        # if MSE increases the images are less similar, as opposed to the SSIM where smaller values indicate less similarity
+
 
 if __name__ == '__main__':
     folder = datetime.now().strftime("%Y%m%d_%H%M%S")
