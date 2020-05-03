@@ -31,6 +31,7 @@ class Grabber:
         self.FD = 0
         self.pxlSpacing = [0.110726, 0.110726]
         self.frontalORlateral = 0  # [0] - frontal, [1] - lateral
+        self.cutImage = False
         if self.frontalORlateral == 0:
             self.SPD = 810  # for frontal C-arm
         else:
@@ -313,7 +314,9 @@ class Grabber:
             key = cv2.waitKey(1)
             if (key == ord('q')):
                 break
-
+            if (key == ord('c')):
+                self.cutImage = not self.cutImage
+                print("switched image clipping mode to ", self.cutImage)
         timeEnd = time.time()
         timeDiff = timeEnd - timeStart
         print("total time: ", timeDiff)
