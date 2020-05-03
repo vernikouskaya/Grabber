@@ -18,6 +18,10 @@ class Grabber:
         self.initialized = False
         self.imageHeight = 1024
         self.imageWidth = 1280
+        self.imageHeightCut = 1000  # cropped image height
+        self.imageWidthCut = 1000 # cropped image width
+        self.panelWidth = 257 # number of horizontal pixels with geometry info
+        self.y_cut = 24 # number of upper pixels with patient name
         self.geometrySize = 255
         self.threshold = 10     # initial value greater than black
         self.fontSet = self.font = 0           #is set during convertion to binary: to MIN (or black font on the tamplate) or to MAX (or black font on the tamplate)
@@ -58,14 +62,13 @@ class Grabber:
         # y_start = 169
         y_start = 145  # calculating after cutting of upper 24 pixels
         y_end = y_start + self.geometrySize
-        y_cut = 24
 
-        image_cut = image[y_cut:self.imageHeight, x_start:self.imageWidth]  #first cut upper panel with patient name
+        image_cut = image[self.y_cut:self.imageHeight, x_start:self.imageWidth]  #first cut upper panel with patient name
         indices = np.nonzero(image_cut > self.threshold)                         # find first non-zero pixel in x and y
         x_shift = indices[1][0]
         y_shift = indices[0][0]
 
-        image_cut = image_cut[0:self.imageHeight, (x_start + x_shift):self.imageWidth]  #now cut the horizontal shift
+        image_cut = image_cut[0:self.imageHeightCut, (x_start + x_shift):self.imageWidth]  #now cut the horizontal shift
         geometry = image_cut[y_start:y_end, x_start:x_end]
         #cv2.imwrite('geometry.png', geometry)
 
@@ -73,8 +76,8 @@ class Grabber:
         x_start_XR = 62 + x_shift
         x_end_XR = 118 + x_shift
 
-        y_start_XR = 28 - y_cut
-        y_end_XR = 98 - y_cut
+        y_start_XR = 28 - self.y_cut
+        y_end_XR = 98 - self.y_cut
 
         live = image_cut[y_start_XR:y_end_XR, x_start_XR:x_end_XR]
         self.maxXRsign = np.amax(live) # 246 - for white, 75 - for gray
@@ -296,7 +299,10 @@ class Grabber:
                         writeNewFolder = True
                     else:
                         writeNewFolder = False
-                    writer.write(writeNewFolder, np.ascontiguousarray(gray_cut), str(self.primAngle),
+
+                    gray_DICOM = gray_cut[0:self.imageHeightCut, self.panelWidth:(self.panelWidth + self.imageWidthCut)] # cut geometry panel before saving
+                    # alternatively save gray_cut
+                    writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM), str(self.primAngle),
                                      str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
                                      str(self.FD), self.pxlSpacing)
                 else:

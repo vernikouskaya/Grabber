@@ -40,6 +40,7 @@ class DicomWriter:
             self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite)
             if not os.path.exists(self.newFolder):
                 os.makedirs(self.newFolder)
+                #self.ds.SeriesInstanceUID = generate_uid()
                 self.count += 1
                 self.frameNumber = 0
 
@@ -101,13 +102,10 @@ class DicomWriter:
         file_meta.FileMetaInformationVersion = b'\x00\x01'
         SOPClassUID = '1.2.840.10008.5.1.4.1.1.12.1'    # SOP Class Name: X-Ray Angiographic Image Storage
         file_meta.MediaStorageSOPClassUID = SOPClassUID
-        #file_meta.MediaStorageSOPInstanceUID = '2.25.64478777239060462373300680991826309705' #actually (prefix=None) in 2.25
         SOPInstanceUID = generate_uid()
         file_meta.MediaStorageSOPInstanceUID = SOPInstanceUID
 
-        #file_meta.TransferSyntaxUID = '1.2.840.10008.1.2.1'
         file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
-        #file_meta.ImplementationClassUID = '2.25.190146791043182537444806132342625375407'
         file_meta.ImplementationClassUID = generate_uid()
         #file_meta.ImplementationVersionName = 'VTK_DICOM_0_8_6'
         # Main data elements
@@ -123,7 +121,7 @@ class DicomWriter:
         # secondary angulation
         ds.StudyTime = '0'
         ds.PositionerSecondaryAngle = "0.0"
-        ds.StudyInstanceUID = generate_uid()
+
         ds.AccessionNumber = ''
         ds.Modality = 'XA'
         ds.Manufacturer = ''
@@ -133,10 +131,11 @@ class DicomWriter:
         ds.PatientBirthDate = ''
         ds.PatientSex = ''
         ds.KVP = "810.0"
-        ds.DistanceSourceToPatient = "765.0"  # original
+        ds.DistanceSourceToPatient = "810.0"  # original
         ds.DistanceSourceToDetector = "1200.0"  #own + original
-
-        ds.StudyID = '60'
+        ds.StudyInstanceUID = generate_uid()
+        ds.SeriesInstanceUID = generate_uid()
+        ds.StudyID = '0'
         ds.SeriesNumber = "-760"
         ds.AcquisitionNumber = "-110"
         #ds.InstanceNumber = "1"
