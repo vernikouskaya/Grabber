@@ -21,6 +21,20 @@ class Grabber:
         self.geometrySize = 255
         self.threshold = 10     # initial value greater than black
         self.fontSet = self.font = 0           #is set during convertion to binary: to MIN (or black font on the tamplate) or to MAX (or black font on the tamplate)
+        self.maxXRsign = 75
+        self.primAngle = 0
+        self.secAngle = 0
+        self.long = 0
+        self.lat = 0
+        self.height = 0
+        self.SID = 0
+        self.FD = 0
+        self.pxlSpacing = [0.110726, 0.110726]
+        self.frontalORlateral = 0  # [0] - frontal, [1] - lateral
+        if self.frontalORlateral == 0:
+            self.SPD = 810  # for frontal C-arm
+        else:
+            self.SPD = 765  # for lateral C-arm and monoplane system
 
     def initialize(self):
         print("initializing grabber on interface #", self.input)
@@ -53,6 +67,18 @@ class Grabber:
         image_cut = image_cut[0:self.imageHeight, (x_start + x_shift):self.imageWidth]  #now cut the horizontal shift
         geometry = image_cut[y_start:y_end, x_start:x_end]
         #cv2.imwrite('geometry.png', geometry)
+
+
+        x_start_XR = 62 + x_shift
+        x_end_XR = 118 + x_shift
+
+        y_start_XR = 28 - y_cut
+        y_end_XR = 98 - y_cut
+
+        live = image_cut[y_start_XR:y_end_XR, x_start_XR:x_end_XR]
+        self.maxXRsign = np.amax(live) # 246 - for white, 75 - for gray
+        #cv2.imwrite('XRsign.png', live)
+
 
         #cv2.imshow('gray', image)
         #cv2.imshow('gray_cut', image_cut)
@@ -98,7 +124,7 @@ class Grabber:
             }
         return switcher.get(number, -999)
 
-    def pxlSpacing(self, FD):
+    def getPxlSpacing(self, FD):
         switcher = {
             15: 0.110726,
             19: 0.132902,
@@ -159,82 +185,78 @@ class Grabber:
         degreeSign = (243, 9)  # angulation or table position
         LAORAO = (12, 11)  # LAO or RAO
         CAUDCRAN = (24, 61)  # CAUD or CRAN
-        primAngle = 0
-        secAngle = 0
-        long = 0
-        lat = 0
-        height = 0
-        SID = 0
-        FD = 0
-        pxlSpacing = [0.110726, 0.110726]
-        #pxlSpacing = 0.110726
+
 
         if geometry[degreeSign[1], degreeSign[0]] == self.fontSet:  # angulation
             # primary angulation
             if geometry[LAORAO[1], LAORAO[0]] == self.fontSet:  # RAO
-                primAngle = -(firstRowSec * 10 + firstRowThird)
+                self.primAngle = -(firstRowSec * 10 + firstRowThird)
             else:
-                primAngle = firstRowSec * 10 + firstRowThird  # LAO
+                self.primAngle = firstRowSec * 10 + firstRowThird  # LAO
             # secondary angulation
             if geometry[CAUDCRAN[1], CAUDCRAN[0]] == self.fontSet:  # KRAN
-                secAngle = secondRowSec * 10 + secondRowThird
+                self.secAngle = secondRowSec * 10 + secondRowThird
             else:
-                secAngle = -(secondRowSec * 10 + secondRowThird)  # CAUD
+                self.secAngle = -(secondRowSec * 10 + secondRowThird)  # CAUD
 
         else:
             if self.invalid_character(firstRowThird, firstRowSec):
-                long = -999
+                self.long = -999
             elif firstRowSec == -1:  # table
-                long = -firstRowThird
+                self.long = -firstRowThird
             else:
-                long = -(firstRowSec * 10 + firstRowThird)
-            long = 10 * long
+                self.long = -(firstRowSec * 10 + firstRowThird)
+            self.long = 10 * self.long
             if self.invalid_character(secondRowThird, secondRowSec, secondRowFirst):
                 lat = -999
             if secondRowFirst == 0:
                 if secondRowSec >= 0:
-                    lat = secondRowThird
+                    self.lat = secondRowThird
                 else:
-                    lat = -secondRowThird
+                    self.lat = -secondRowThird
             else:
                 if secondRowFirst >= 0:
-                    lat = secondRowSec * 10 + secondRowThird
+                    self.lat = secondRowSec * 10 + secondRowThird
                 else:
-                    lat = -(secondRowSec * 10 + secondRowThird)
-            lat = 10 * lat
+                    self.lat = -(secondRowSec * 10 + secondRowThird)
+            self.lat = 10 * self.lat
         #print("primAngle = ", primAngle)
         #print("longTable", long)
         #print("secAngle = ", secAngle)
         #print("latTable", lat)
 
         if self.invalid_character(thirdRowThird, thirdRowSec, thirdRowFirst):
-            height = -999
+            self.height = -999
         elif thirdRowFirst >= 0:
             if thirdRowSec >= 0:
-                height = thirdRowSec * 10 + thirdRowThird
+                self.height = thirdRowSec * 10 + thirdRowThird
             else:
-                height = -thirdRowThird
+                self.height = -thirdRowThird
         else:
-             height = -(thirdRowSec * 10 + thirdRowThird)
-        height = 10 * height
+             self.height = -(thirdRowSec * 10 + thirdRowThird)
+        self.height = 10 * self.height
         #print("heightTable = ", height)
 
-        SID = forthRowFirst * 100 + forthRowSec * 10 + forthRowThird
-        SID = 10 * SID
-        FD = fifthRowSec * 10 + fifthRowThird
+        self.SID = forthRowFirst * 100 + forthRowSec * 10 + forthRowThird
+        self.SID = 10 * self.SID
+        self.FD = fifthRowSec * 10 + fifthRowThird
         #print("SID = ", SID)
         #print("FD = ", FD)
 
-        spacing = self.pxlSpacing(FD)
+        spacing = self.getPxlSpacing(self.FD)
         if self.invalid_character(spacing):
-            pxlSpacing[0] = pxlSpacing[1] = -999
+            self.pxlSpacing[0] = self.pxlSpacing[1] = -999
         else:
-            pxlSpacing[0] = pxlSpacing[1] = spacing
+            self.pxlSpacing[0] = self.pxlSpacing[1] = spacing
             #print("pxlSpacing = ", pxlSpacing)
 
-        return primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing
+        return
 
     def grab(self):
+
+        XRsign_now = False
+        XRsign_prev = False
+
         if not (self.initialized):
             print("grabber is not initialized!")
             return
@@ -265,16 +287,22 @@ class Grabber:
                 fifthRowSec, fifthRowThird = self.extract_values_from_row(geometry, 2, init_template + 4*template_shift)  # (FD)
 
                 # distinguish and calculate geometry parameters
-                primAngle, secAngle, long, lat, height, SID, FD, pxlSpacing = self.recognize_characters(geometry, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
+                self.recognize_characters(geometry, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
 
-                frontalORlateral = 0 # [0] - frontal, [1] - lateral
-                if frontalORlateral == 0:
-                    SPD = 810   # for frontal C-arm
+                if self.maxXRsign >= 200:
+                    XRsign_now = True
+                    if XRsign_now and XRsign_prev == False:
+                        writeNewFolder = True
+                    else:
+                        writeNewFolder = False
+                    writer.write(writeNewFolder, np.ascontiguousarray(gray_cut), str(self.primAngle),
+                                     str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
+                                     str(self.FD), self.pxlSpacing)
                 else:
-                    SPD = 765   # for lateral C-arm and monoplane system
+                    XRsign_now = False
 
-                #self.compare_images(gray_cut, gray_cut)
-                writer.write(np.ascontiguousarray(gray_cut), str(primAngle), str(secAngle), long, lat, height, str(SID), SPD, str(FD), pxlSpacing)
+                XRsign_prev = XRsign_now
+
                 self.numFrames += 1
 
             if (self.numFrames % self.statDelay == 0):
@@ -291,32 +319,6 @@ class Grabber:
         print("total time: ", timeDiff)
         print("total frames: ", self.numFrames)
         print("average FPS: ", self.numFrames / timeDiff)
-
-    def mse(self, imageA, imageB):
-        # the 'Mean Squared Error' between the two images is the
-        # sum of the squared difference between the two images;
-        # NOTE: the two images must have the same dimension
-        #if imageA.rows > 0 & imageA.rows == imageB.rows & imageA.cols > 0 & imageA.cols == imageB.cols:
-            err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
-            err /= float(imageA.shape[0] * imageA.shape[1])
-            # return the MSE, the lower the error, the more "similar"
-            # the two images are
-            return err
-        #else:
-            # two images have diff dimensions
-            #return 10000.0  #return a bad value
-
-    def compare_images(self, imageA, imageB):
-        # compute the mean squared error and structural similarity
-        # index for the images
-        m = self.mse(imageA, imageB)
-        if m == 0.0:
-            return 1
-        else:
-            return 0
-        # If image is identical to itself, MSE = 0.0 and SSIM = 1.0.
-        # if MSE increases the images are less similar, as opposed to the SSIM where smaller values indicate less similarity
-
 
 if __name__ == '__main__':
     folder = datetime.now().strftime("%Y%m%d_%H%M%S")

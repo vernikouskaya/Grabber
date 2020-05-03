@@ -20,13 +20,29 @@ class DicomWriter:
         self.ds = self.generateHeader()
         self.frameNumber = 0
         self.folderName = 'data'
+        self.newFolder = 'data'
+        self.count = 1
 
     def initialize(self, folderName):
         self.folderName = folderName
         if not os.path.exists(self.folderName):
             os.makedirs(self.folderName)
 
-    def write(self, pixelData, primAngle, secAngle, long, lat, height, SID, SPD, FD, pxlSpacing):        ##not forget spacing!!!
+    def write(self, writeFolder, pixelData, primAngle, secAngle, long, lat, height, SID, SPD, FD, pxlSpacing):        ##not forget spacing!!!
+
+        if writeFolder:
+            if int(primAngle) >= 0:
+                angle = 'LAO'
+                angleToWrite = int(primAngle)
+            else:
+                angle = 'RAO'
+                angleToWrite = -int(primAngle)
+            self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite)
+            if not os.path.exists(self.newFolder):
+                os.makedirs(self.newFolder)
+                self.count += 1
+                self.frameNumber = 0
+
         # File meta info data elements
         datetimeNow = datetime.now()
         self.ds.InstanceCreationDate = datetimeNow.strftime("%Y%m%d")   #grabbing date
@@ -77,7 +93,7 @@ class DicomWriter:
         self.ds.PixelData = pixelData
         self.frameNumber += 1
         self.ds.InstanceNumber = str(self.frameNumber)
-        self.ds.save_as(self.folderName + '/' + str(self.frameNumber) + '.dcm', write_like_original=False) # "False" in order to write file signature!!!
+        self.ds.save_as(self.newFolder + '/' + str(self.frameNumber) + '.dcm', write_like_original=False) # "False" in order to write file signature!!!
 
     def generateHeader(self):
         file_meta = Dataset()
