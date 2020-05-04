@@ -20,9 +20,8 @@ class Grabber:
         self.imageWidth = 1280
         self.imageHeightCut = 1000  # cropped image height
         self.imageWidthCut = 1000 # cropped image width
-        self.panelWidth = 257 # number of horizontal pixels with geometry info
         self.y_cut = 24 # number of upper pixels with patient name
-        self.geometrySize = 255
+        self.geometrySize = 256 # number of horizontal pixels with geometry info
         self.threshold = 10     # initial value greater than black
         self.fontSet = self.font = 0           #is set during convertion to binary: to MIN (or black font on the tamplate) or to MAX (or black font on the tamplate)
         self.maxXRsign = 75
@@ -300,7 +299,7 @@ class Grabber:
                     else:
                         writeNewFolder = False
 
-                    gray_DICOM = gray_cut[0:self.imageHeightCut, self.panelWidth:(self.panelWidth + self.imageWidthCut)] # cut geometry panel before saving
+                    gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
                     # alternatively save gray_cut
                     writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM), str(self.primAngle),
                                      str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
