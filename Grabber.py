@@ -259,6 +259,7 @@ class Grabber:
 
         XRsign_now = False
         XRsign_prev = False
+        gray_DICOM_now = np.zeros((1000, 1000))
 
         if not (self.initialized):
             print("grabber is not initialized!")
@@ -300,10 +301,17 @@ class Grabber:
                         writeNewFolder = False
 
                     gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
-                    # alternatively save gray_cut
-                    writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM), str(self.primAngle),
+                    # alternatively compare and save gray_cut instead of gray_DICOM
+                    #timeBefore = time.time()
+                    if not self.compare_images(gray_DICOM_now, gray_DICOM):
+                        gray_DICOM_now = gray_DICOM
+                        writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM_now), str(self.primAngle),
                                      str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
                                      str(self.FD), self.pxlSpacing)
+                    else:
+                        gray_DICOM_now = gray_DICOM_now
+                    #timeAfter = time.time()
+                    #print('comparison_time: ', timeAfter - timeBefore) #takes 10 to 15ms
                 else:
                     XRsign_now = False
 
@@ -327,6 +335,32 @@ class Grabber:
         print("total time: ", timeDiff)
         print("total frames: ", self.numFrames)
         print("average FPS: ", self.numFrames / timeDiff)
+
+    def mse(self, imageA, imageB):
+        # the 'Mean Squared Error' between the two images is the
+        # sum of the squared difference between the two images;
+        # NOTE: the two images must have the same dimension
+        # if imageA.rows > 0 & imageA.rows == imageB.rows & imageA.cols > 0 & imageA.cols == imageB.cols:
+        err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
+        err /= float(imageA.shape[0] * imageA.shape[1])
+        # return the MSE, the lower the error, the more "similar"
+        # the two images are
+        return err
+
+    # else:
+    # two images have diff dimensions
+    # return 10000.0  #return a bad value
+
+    def compare_images(self, imageA, imageB):
+        # compute the mean squared error and structural similarity
+        # index for the images
+        m = self.mse(imageA, imageB)
+        if m == 0.0:
+            return 1
+        else:
+            return 0
+        # If image is identical to itself, MSE = 0.0 and SSIM = 1.0.
+        # if MSE increases the images are less similar, as opposed to the SSIM where smaller values indicate less similarity
 
 if __name__ == '__main__':
     folder = datetime.now().strftime("%Y%m%d_%H%M%S")
