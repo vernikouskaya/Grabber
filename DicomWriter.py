@@ -9,10 +9,9 @@ import pydicom
 from pydicom.dataset import Dataset
 from pydicom.sequence import Sequence
 from pydicom.uid import generate_uid
-from pydicom.tag import Tag
 
-#https://github.com/ivmartel/dwv/wiki/Error-Messages
-#####gdcmconv - -raw - i { in -dcm_file_path} -o {out - dcm_file_path}
+
+
 
 class DicomWriter:
 
