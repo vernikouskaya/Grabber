@@ -33,9 +33,9 @@ class Grabber:
         self.SID = 0
         self.FD = 0
         self.pxlSpacing = [0.110726, 0.110726]
-        self.frontalORlateral = 0  # [0] - frontal, [1] - lateral
+        self.frontalORlateral = 1  # [0] - frontal, [1] - lateral
         self.cutImage = False
-        if self.frontalORlateral == 1:
+        if self.frontalORlateral == 0:
             self.SPD = 810  # for frontal C-arm
         else:
             self.SPD = 765  # for lateral C-arm and monoplane system
@@ -283,7 +283,8 @@ class Grabber:
 
         XRsign_now = False
         XRsign_prev = False
-        gray_DICOM_now = np.zeros((1000, 1000))
+        gray_DICOM_now = np.zeros((1000, 1000)) # for cut image
+        #gray_DICOM_now = np.zeros((1000, 1280))  # for whole image: HKL3 - 1280, HKL4 - 1278
 
         if not (self.initialized):
             print("grabber is not initialized!")
@@ -327,6 +328,7 @@ class Grabber:
                     gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
                     # alternatively compare and save gray_cut instead of gray_DICOM
                     #timeBefore = time.time()
+                    #gray_DICOM = gray_cut
                     if not self.compare_images(gray_DICOM_now, gray_DICOM):
                         gray_DICOM_now = gray_DICOM
                         writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM_now), str(self.primAngle),
@@ -336,6 +338,9 @@ class Grabber:
                         gray_DICOM_now = gray_DICOM_now
                     #timeAfter = time.time()
                     #print('comparison_time: ', timeAfter - timeBefore) #takes 10 to 15ms
+                    # writer.write(writeNewFolder, np.ascontiguousarray(gray_cut), str(self.primAngle),
+                    #              str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
+                    #              str(self.FD), self.pxlSpacing)
                 else:
                     XRsign_now = False
 
