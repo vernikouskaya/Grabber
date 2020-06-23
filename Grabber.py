@@ -35,7 +35,7 @@ class Grabber:
         self.pxlSpacing = [0.110726, 0.110726]
         self.frontalORlateral = 0  # [0] - frontal, [1] - lateral
         self.cutImage = False
-        if self.frontalORlateral == 0:
+        if self.frontalORlateral == 1:
             self.SPD = 810  # for frontal C-arm
         else:
             self.SPD = 765  # for lateral C-arm and monoplane system
@@ -109,22 +109,42 @@ class Grabber:
         #cv2.imwrite('binary.png, binary_image_out)
         return binary_image_out
 
+    # HKL4
+    # def normReco(self, number):
+    #     switcher = {
+    #         4939: 1,
+    #         4497: 2,
+    #         4483: 3,
+    #         4417: 4,
+    #         4454: 5,
+    #         4290: 6,
+    #         4892: 7,
+    #         3851: 8,
+    #         4245: 9,
+    #         4080: 0,
+    #         5975: -1,  # "-" #
+    #         5570: 0,  # "+" #
+    #         6189: 0,   # empty
+    #         }
+    #     return switcher.get(number, -999)
+
+    # HKL3
     def normReco(self, number):
         switcher = {
-            4939: 1,
-            4497: 2,
-            4483: 3,
-            4417: 4,
-            4454: 5,
-            4290: 6,
-            4892: 7,
-            3851: 8,
-            4245: 9,
-            4080: 0,
+            4468: 1,
+            4214: 2,
+            4252: 3,
+            3951: 4,
+            4183: 5,
+            3967: 6,
+            4668: 7,
+            3441: 8,
+            3943: 9,
+            3525: 0,
             5975: -1,  # "-" #
-            5570: 0,  # "+" #
-            6189: 0,   # empty
-            }
+            5380: 0,  # "+" #
+            6189: 0,  # empty
+        }
         return switcher.get(number, -999)
 
     def getPxlSpacing(self, FD):
@@ -182,13 +202,12 @@ class Grabber:
         else:
             return m, p
 
-    def recognize_characters(self, geometry, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird):
+    def recognize_characters(self, geometry, firstRowFirst, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird):
 
         # some points for differentiation within geometry template
         degreeSign = (243, 9)  # angulation or table position
         LAORAO = (12, 11)  # LAO or RAO
         CAUDCRAN = (24, 61)  # CAUD or CRAN
-
 
         if geometry[degreeSign[1], degreeSign[0]] == self.fontSet:  # angulation
             # primary angulation
@@ -203,25 +222,30 @@ class Grabber:
                 self.secAngle = -(secondRowSec * 10 + secondRowThird)  # CAUD
 
         else:
-            if self.invalid_character(firstRowThird, firstRowSec):
+            if self.invalid_character(firstRowThird, firstRowSec, firstRowFirst):
                 self.long = -999
-            elif firstRowSec == -1:  # table
-                self.long = -firstRowThird
+            if firstRowFirst == 0:
+                if firstRowSec >= 0:
+                    self.long = firstRowSec * 10 + firstRowThird
+                else:
+                    self.long = -firstRowThird
             else:
                 self.long = -(firstRowSec * 10 + firstRowThird)
             self.long = 10 * self.long
+            # elif firstRowSec == -1:  # table
+            #     self.long = -firstRowThird
+            # else:
+            #     self.long = -(firstRowSec * 10 + firstRowThird)
+            # self.long = 10 * self.long
             if self.invalid_character(secondRowThird, secondRowSec, secondRowFirst):
                 lat = -999
             if secondRowFirst == 0:
                 if secondRowSec >= 0:
-                    self.lat = secondRowThird
+                    self.lat = secondRowSec * 10 + secondRowThird
                 else:
                     self.lat = -secondRowThird
             else:
-                if secondRowFirst >= 0:
-                    self.lat = secondRowSec * 10 + secondRowThird
-                else:
-                    self.lat = -(secondRowSec * 10 + secondRowThird)
+                self.lat = -(secondRowSec * 10 + secondRowThird)
             self.lat = 10 * self.lat
         #print("primAngle = ", primAngle)
         #print("longTable", long)
@@ -283,7 +307,7 @@ class Grabber:
                 # geometry_new = cv2.circle(geometry_new, (243, 9), 1, [255, 0, 0], -1)
                 # cv2.imwrite("LAOTable.png", geometry_new)
 
-                firstRowSec, firstRowThird = self.extract_values_from_row(geometry, 2, init_template)                     # (LAO/RAO)
+                firstRowFirst, firstRowSec, firstRowThird = self.extract_values_from_row(geometry, 3, init_template)                     # (LAO/RAO)
                 self.fontSet = self.font
                 secondRowFirst, secondRowSec, secondRowThird = self.extract_values_from_row(geometry, 3, init_template + template_shift)  # (KAUD/CRAN)
                 thirdRowFirst, thirdRowSec, thirdRowThird = self.extract_values_from_row(geometry, 3, init_template + 2*template_shift)  # (TableHigh)
@@ -291,7 +315,7 @@ class Grabber:
                 fifthRowSec, fifthRowThird = self.extract_values_from_row(geometry, 2, init_template + 4*template_shift)  # (FD)
 
                 # distinguish and calculate geometry parameters
-                self.recognize_characters(geometry, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
+                self.recognize_characters(geometry, firstRowFirst, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
 
                 if self.maxXRsign >= 200:
                     XRsign_now = True
