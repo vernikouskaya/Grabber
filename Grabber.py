@@ -30,8 +30,8 @@ class Grabber:
         self.long = 0
         self.lat = 0
         self.height = 0
-        self.SID = 0
-        self.FD = 0
+        self.SID = 1200
+        self.FD = 15
         self.pxlSpacing = [0.110726, 0.110726]
         self.frontalORlateral = 1  # [0] - frontal, [1] - lateral
         self.cutImage = False
