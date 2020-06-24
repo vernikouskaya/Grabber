@@ -35,10 +35,12 @@ class Grabber:
         self.pxlSpacing = [0.110726, 0.110726]
         self.frontalORlateral = 1  # [0] - frontal, [1] - lateral
         self.cutImage = False
-        if self.frontalORlateral == 0:
-            self.SPD = 810  # for frontal C-arm
-        else:
-            self.SPD = 765  # for lateral C-arm and monoplane system
+        self.HKL = '3'
+        self.SPD = 765
+        # if self.frontalORlateral == 0:
+        #     self.SPD = 810  # for frontal C-arm
+        # else:
+        #     self.SPD = 765  # for lateral C-arm and monoplane system
 
     def initialize(self):
         print("initializing grabber on interface #", self.input)
@@ -47,6 +49,15 @@ class Grabber:
             print("Video capture can't be open")
         else:
             self.initialized = True
+            inputHKL = input('in which HKL measurements are performed [3 or 4]: ')
+            if inputHKL == '3' or inputHKL == '4':
+                self.HKL = inputHKL
+            if self.HKL == '3':
+                self.SPD = 765  # for lateral C-arm and monoplane system
+            else:
+                self.SPD = 810  # for frontal C-arm
+
+            print('frame capturing is initialized for HKL', self.HKL)
 
     def destroy(self):
         cv2.destroyAllWindows()
@@ -130,22 +141,40 @@ class Grabber:
 
     # HKL3
     def normReco(self, number):
-        switcher = {
-            4468: 1,
-            4214: 2,
-            4252: 3,
-            3951: 4,
-            4183: 5,
-            3967: 6,
-            4668: 7,
-            3441: 8,
-            3943: 9,
-            3525: 0,
-            5975: -1,  # "-" #
-            5380: 0,  # "+" #
-            6189: 0,  # empty
-        }
+        if self.HKL == '3':
+            switcher = {
+                4468: 1,
+                4214: 2,
+                4252: 3,
+                3951: 4,
+                4183: 5,
+                3967: 6,
+                4668: 7,
+                3441: 8,
+                3943: 9,
+                3525: 0,
+                5975: -1,  # "-" #
+                5380: 0,  # "+" #
+                6189: 0,  # empty
+            }
+        else:
+            switcher = {
+                4939: 1,
+                4497: 2,
+                4483: 3,
+                4417: 4,
+                4454: 5,
+                4290: 6,
+                4892: 7,
+                3851: 8,
+                4245: 9,
+                4080: 0,
+                5975: -1,  # "-" #
+                5570: 0,  # "+" #
+                6189: 0,  # empty
+            }
         return switcher.get(number, -999)
+
 
     def getPxlSpacing(self, FD):
         switcher = {
