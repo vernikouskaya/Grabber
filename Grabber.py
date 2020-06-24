@@ -299,7 +299,7 @@ class Grabber:
             print("grabber is not initialized!")
             return
         print("Grab image from input #", self.input)
-        print("geometry is cut away when storing images, please press 'c' to store whole images")
+        print("geometry is cut away when storing images, please press 'c' within the image window to store whole images")
         timeStart = time.time()
         timeLast = timeStart
 
