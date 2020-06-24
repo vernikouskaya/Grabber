@@ -300,6 +300,7 @@ class Grabber:
             return
         print("Grab image from input #", self.input)
         print("geometry is cut away when storing images, please press 'c' within the image window to store whole images")
+        #print("geometry is cut away when storing images")
         timeStart = time.time()
         timeLast = timeStart
 
@@ -350,7 +351,7 @@ class Grabber:
                         gray_DICOM_now = gray_DICOM_now
                     #timeAfter = time.time()
                     #print('comparison_time: ', timeAfter - timeBefore) #takes 10 to 15ms
-                    # writer.write(writeNewFolder, np.ascontiguousarray(gray_cut), str(self.primAngle),
+                    # writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM), str(self.primAngle),
                     #              str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
                     #              str(self.FD), self.pxlSpacing)
                 else:
