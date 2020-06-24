@@ -30,8 +30,8 @@ class Grabber:
         self.long = 0
         self.lat = 0
         self.height = 0
-        self.SID = 0
-        self.FD = 0
+        self.SID = 1200
+        self.FD = 15
         self.pxlSpacing = [0.110726, 0.110726]
         self.frontalORlateral = 1  # [0] - frontal, [1] - lateral
         self.cutImage = False
@@ -120,28 +120,9 @@ class Grabber:
         #cv2.imwrite('binary.png, binary_image_out)
         return binary_image_out
 
-    # HKL4
-    # def normReco(self, number):
-    #     switcher = {
-    #         4939: 1,
-    #         4497: 2,
-    #         4483: 3,
-    #         4417: 4,
-    #         4454: 5,
-    #         4290: 6,
-    #         4892: 7,
-    #         3851: 8,
-    #         4245: 9,
-    #         4080: 0,
-    #         5975: -1,  # "-" #
-    #         5570: 0,  # "+" #
-    #         6189: 0,   # empty
-    #         }
-    #     return switcher.get(number, -999)
-
     # HKL3
     def normReco(self, number):
-        if self.HKL == '3':
+        if self.HKL == '3':     # HKL3
             switcher = {
                 4468: 1,
                 4214: 2,
@@ -157,7 +138,7 @@ class Grabber:
                 5380: 0,  # "+" #
                 6189: 0,  # empty
             }
-        else:
+        else:                   # HKL4
             switcher = {
                 4939: 1,
                 4497: 2,
