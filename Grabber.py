@@ -34,7 +34,7 @@ class Grabber:
         self.FD = 15
         self.pxlSpacing = [0.110726, 0.110726]
         self.frontalORlateral = 1  # [0] - frontal, [1] - lateral
-        self.cutImage = False
+        self.cutImage = True
         self.HKL = '3'
         self.SPD = 765
         # if self.frontalORlateral == 0:
@@ -94,7 +94,7 @@ class Grabber:
         #cv2.imwrite('XRsign.png', live)
 
 
-        #cv2.imshow('gray', image)
+        cv2.imshow('gray', image)
         #cv2.imshow('gray_cut', image_cut)
         #cv2.imshow('geometry', geometry)
 
@@ -294,12 +294,12 @@ class Grabber:
         XRsign_now = False
         XRsign_prev = False
         gray_DICOM_now = np.zeros((1000, 1000)) # for cut image
-        #gray_DICOM_now = np.zeros((1000, 1280))  # for whole image: HKL3 - 1280, HKL4 - 1278
 
         if not (self.initialized):
             print("grabber is not initialized!")
             return
         print("Grab image from input #", self.input)
+        print("geometry is cut away when storing images, please press 'c' to store whole images")
         timeStart = time.time()
         timeLast = timeStart
 
@@ -335,10 +335,12 @@ class Grabber:
                     else:
                         writeNewFolder = False
 
-                    gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
-                    # alternatively compare and save gray_cut instead of gray_DICOM
-                    #timeBefore = time.time()
-                    #gray_DICOM = gray_cut
+                    if self.cutImage:
+                        gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
+                    else:
+                        gray_DICOM = gray_cut
+                    # timeBefore = time.time()
+
                     if not self.compare_images(gray_DICOM_now, gray_DICOM):
                         gray_DICOM_now = gray_DICOM
                         writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM_now), str(self.primAngle),
@@ -379,16 +381,17 @@ class Grabber:
         # the 'Mean Squared Error' between the two images is the
         # sum of the squared difference between the two images;
         # NOTE: the two images must have the same dimension
-        # if imageA.rows > 0 & imageA.rows == imageB.rows & imageA.cols > 0 & imageA.cols == imageB.cols:
-        err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
-        err /= float(imageA.shape[0] * imageA.shape[1])
-        # return the MSE, the lower the error, the more "similar"
-        # the two images are
+        if imageA.shape[0] > 0 & imageA.shape[0] == imageB.shape[0] & imageA.shape[1] > 0 & imageA.shape[1] == imageB.shape[1]:
+            err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
+            err /= float(imageA.shape[0] * imageA.shape[1])
+            # return the MSE, the lower the error, the more "similar"
+            # the two images are
+        else:
+            # two images have diff dimensions, return high mse value
+            err = 1
+
         return err
 
-    # else:
-    # two images have diff dimensions
-    # return 10000.0  #return a bad value
 
     def compare_images(self, imageA, imageB):
         # compute the mean squared error and structural similarity
