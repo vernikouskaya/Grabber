@@ -215,9 +215,14 @@ class Grabber:
     def recognize_characters(self, geometry, firstRowFirst, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird):
 
         # some points for differentiation within geometry template
-        degreeSign = (243, 9)  # angulation or table position
-        LAORAO = (12, 11)  # LAO or RAO
-        CAUDCRAN = (24, 61)  # CAUD or CRAN
+        # this is working in HKL4, but not HKL3
+        #degreeSign = (243, 9)  # angulation or table position
+        #LAORAO = (12, 11)  # LAO or RAO
+        #CAUDCRAN = (24, 61)  # CAUD or CRAN
+        # this is working in both
+        degreeSign = (244, 9)  # angulation or table position
+        LAORAO = (14, 11)  # LAO or RAO
+        CAUDCRAN = (25, 61)  # CAUD or CRAN
 
         if geometry[degreeSign[1], degreeSign[0]] == self.fontSet:  # angulation
             # primary angulation
