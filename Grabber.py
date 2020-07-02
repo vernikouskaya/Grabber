@@ -4,9 +4,22 @@ from datetime import datetime
 
 import cv2
 import numpy as np
-
+import logging
 from DicomWriter import DicomWriter
 
+import os.path
+
+
+filename = './logFile.log'
+if os.path.isfile(filename):
+    open(filename, "w").close()
+
+logger = logging.getLogger('logFile')
+hdlr = logging.FileHandler('./logFile.log')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.WARNING)
 
 class Grabber:
 
@@ -173,9 +186,12 @@ class Grabber:
             }
         return switcher.get(FD, -999)
 
-    def invalid_character(self, third = None, second = None, first = None):
+    def invalid_character(self, description, third = None, second = None, first = None):
         if first == -999 or second == -999 or third == -999:
-            print("invalid character")
+            print("invalid character: ", description)
+            self.cutImage = False
+            logger.error('character ' + description + ' is not recognized')
+
             return 0
 
     def extract_values_from_row(self, geometry, number, yCoord):
@@ -227,18 +243,22 @@ class Grabber:
 
         if geometry[degreeSign[1], degreeSign[0]] == self.fontSet:  # angulation
             # primary angulation
+            if self.invalid_character('primAngle', firstRowThird, firstRowSec):
+                self.primAngle = -999
             if geometry[LAORAO[1], LAORAO[0]] == self.fontSet:  # RAO
                 self.primAngle = -(firstRowSec * 10 + firstRowThird)
             else:
                 self.primAngle = firstRowSec * 10 + firstRowThird  # LAO
             # secondary angulation
+            if self.invalid_character('secAngle', secondRowThird, secondRowSec):
+                self.secAngle = -999
             if geometry[CAUDCRAN[1], CAUDCRAN[0]] == self.fontSet:  # KRAN
                 self.secAngle = secondRowSec * 10 + secondRowThird
             else:
                 self.secAngle = -(secondRowSec * 10 + secondRowThird)  # CAUD
 
         else:
-            if self.invalid_character(firstRowThird, firstRowSec, firstRowFirst):
+            if self.invalid_character('longTable', firstRowThird, firstRowSec, firstRowFirst):
                 self.long = -999
             if firstRowFirst == 0:
                 if firstRowSec >= 0:
@@ -253,8 +273,8 @@ class Grabber:
             # else:
             #     self.long = -(firstRowSec * 10 + firstRowThird)
             # self.long = 10 * self.long
-            if self.invalid_character(secondRowThird, secondRowSec, secondRowFirst):
-                lat = -999
+            if self.invalid_character('latTable', secondRowThird, secondRowSec, secondRowFirst):
+                self.lat = -999
             if secondRowFirst == 0:
                 if secondRowSec >= 0:
                     self.lat = secondRowSec * 10 + secondRowThird
@@ -268,7 +288,7 @@ class Grabber:
         #print("secAngle = ", secAngle)
         #print("latTable", lat)
 
-        if self.invalid_character(thirdRowThird, thirdRowSec, thirdRowFirst):
+        if self.invalid_character('height', thirdRowThird, thirdRowSec, thirdRowFirst):
             self.height = -999
         elif thirdRowFirst >= 0:
             if thirdRowSec >= 0:
@@ -280,8 +300,12 @@ class Grabber:
         self.height = 10 * self.height
         #print("heightTable = ", height)
 
+        if self.invalid_character('SID', forthRowThird, forthRowSec, forthRowFirst):
+            self.SID = -999
         self.SID = forthRowFirst * 100 + forthRowSec * 10 + forthRowThird
         self.SID = 10 * self.SID
+        if self.invalid_character('FD', fifthRowThird, fifthRowSec):
+            self.FD = -999
         self.FD = fifthRowSec * 10 + fifthRowThird
         #print("SID = ", SID)
         #print("FD = ", FD)
