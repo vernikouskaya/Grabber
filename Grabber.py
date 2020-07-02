@@ -13,7 +13,7 @@ class Grabber:
     def __init__(self, input=0):
         self.input = input
         self.numFrames = 0
-        self.statDelay = 50 # print statistics every '''statDelay''' frames
+        self.statDelay = 100 # print statistics every '''statDelay''' frames
         self.capture = None
         self.initialized = False
         self.imageHeight = 1024
@@ -43,6 +43,7 @@ class Grabber:
         #     self.SPD = 765  # for lateral C-arm and monoplane system
 
     def initialize(self):
+        self.select_videoPort()
         print("initializing grabber on interface #", self.input)
         self.capture = cv2.VideoCapture(self.input)
         if not(self.capture.isOpened()):
@@ -347,18 +348,18 @@ class Grabber:
                         gray_DICOM = gray_cut
                     # timeBefore = time.time()
 
-                    if not self.compare_images(gray_DICOM_now, gray_DICOM):
-                        gray_DICOM_now = gray_DICOM
-                        writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM_now), str(self.primAngle),
-                                     str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
-                                     str(self.FD), self.pxlSpacing)
-                    else:
-                        gray_DICOM_now = gray_DICOM_now
+                    # if not self.compare_images(gray_DICOM_now, gray_DICOM):
+                    #     gray_DICOM_now = gray_DICOM
+                    #     writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM_now), str(self.primAngle),
+                    #                  str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
+                    #                  str(self.FD), self.pxlSpacing)
+                    # else:
+                    #     gray_DICOM_now = gray_DICOM_now
                     #timeAfter = time.time()
                     #print('comparison_time: ', timeAfter - timeBefore) #takes 10 to 15ms
-                    # writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM), str(self.primAngle),
-                    #              str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
-                    #              str(self.FD), self.pxlSpacing)
+                    writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM), str(self.primAngle),
+                                 str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
+                                 str(self.FD), self.pxlSpacing)
                 else:
                     XRsign_now = False
 
@@ -409,6 +410,27 @@ class Grabber:
             return 0
         # If image is identical to itself, MSE = 0.0 and SSIM = 1.0.
         # if MSE increases the images are less similar, as opposed to the SSIM where smaller values indicate less similarity
+
+    def select_videoPort(self):
+        index = 0
+        cap = cv2.VideoCapture(index)
+        if not (cap.isOpened()):
+            print("Video capture can't be open")
+            return
+        while True:
+            _, frame = cap.read()
+            cv2.imshow('frame', frame)
+            key = cv2.waitKey(1)
+            if key & 0xFF == ord('n'):
+                cap.release()
+                index += 1
+                cap = cv2.VideoCapture(index)
+                if not (cap.isOpened()):
+                    print("Video capture can't be open")
+            if key & 0xFF == ord('y'):
+                self.input = index
+                cap.release()
+                break
 
 if __name__ == '__main__':
     folder = datetime.now().strftime("%Y%m%d_%H%M%S")
