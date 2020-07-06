@@ -7,8 +7,6 @@ import numpy as np
 import logging
 from DicomWriter import DicomWriter
 
-import os.path
-
 class Grabber:
 
     def __init__(self, input=0):
@@ -34,15 +32,10 @@ class Grabber:
         self.SID = 1200
         self.FD = 15
         self.pxlSpacing = [0.110726, 0.110726]
-        self.frontalORlateral = 1  # [0] - frontal, [1] - lateral
         self.cutImage = True
         self.uncutOnce = False
         self.HKL = '3'
         self.SPD = 765
-        # if self.frontalORlateral == 0:
-        #     self.SPD = 810  # for frontal C-arm
-        # else:
-        #     self.SPD = 765  # for lateral C-arm and monoplane system
 
     def initialize(self):
         self.select_videoPort()
@@ -96,7 +89,6 @@ class Grabber:
         self.maxXRsign = np.amax(live) # 246 - for white, 75 - for gray
         #cv2.imwrite('XRsign.png', live)
 
-
         cv2.imshow('gray', image)
         #cv2.imshow('gray_cut', image_cut)
         #cv2.imshow('geometry', geometry)
@@ -138,7 +130,7 @@ class Grabber:
                 4048: 9,
                 3748: 0,
                 5975: -1,  # "-" #
-                5380: 0,  # "+" #       ???
+                5380: 0,  # "+" #
                 6189: 0,  # empty   #
             }
         else:                   # HKL4
@@ -177,7 +169,7 @@ class Grabber:
 
     def invalid_character(self, description, third = None, second = None, first = None):
         if first == -999 or second == -999 or third == -999:
-            print("invalid character: ", description)
+            #print("invalid character: ", description)
             self.uncutOnce = True
             logger.error('character ' + description + ' is not recognized')
 
@@ -319,7 +311,7 @@ class Grabber:
             return
         print("Grab image from input #", self.input)
         print("geometry is cut away when storing images, please press 'c' within the image window to store whole images")
-        #print("geometry is cut away when storing images")
+
         timeStart = time.time()
         timeLast = timeStart
 
@@ -396,6 +388,7 @@ class Grabber:
             if (key == ord('c')):
                 self.cutImage = not self.cutImage
                 print("switched image clipping mode to ", self.cutImage)
+
         timeEnd = time.time()
         timeDiff = timeEnd - timeStart
         print("total time: ", timeDiff)
@@ -448,14 +441,11 @@ class Grabber:
             if key & 0xFF == ord('y'):
                 self.input = index
                 cap.release()
+                cv2.destroyAllWindows()
                 break
 
 if __name__ == '__main__':
     folder = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    # filename = './logFile.log'
-    # if os.path.isfile(filename):
-    #     open(filename, "w").close()
 
     logger = logging.getLogger('logFile')
     filename = './logFile_' + folder + '.log'
