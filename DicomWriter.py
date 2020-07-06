@@ -45,14 +45,14 @@ class DicomWriter:
 
         # File meta info data elements
         datetimeNow = datetime.now()
-        self.ds.InstanceCreationDate = datetimeNow.strftime("%Y%m%d")   #grabbing date
-        self.ds.InstanceCreationTime = datetimeNow.strftime("%H%M%S")  #grabbing time
+        #self.ds.InstanceCreationDate = datetimeNow.strftime("%Y%m%d")   #grabbing date
+        #self.ds.InstanceCreationTime = datetimeNow.strftime("%H%M%S.%f")  #grabbing time
 
         self.ds.AcquisitionDate = datetimeNow.strftime("%Y%m%d")  # grabbing date
-        self.ds.AcquisitionTime = datetimeNow.strftime("%H%M%S")  # grabbing time
+        self.ds.AcquisitionTime = datetimeNow.strftime("%H%M%S.%f")[:-3]  # grabbing time
 
         self.ds.ContentDate = datetimeNow.strftime("%Y%m%d")  # grabbing date
-        self.ds.ContentTime = datetimeNow.strftime("%H%M%S")  # grabbing time
+        self.ds.ContentTime = datetimeNow.strftime("%H%M%S.%f")[:-3]  # grabbing time
 
         self.ds.SeriesInstanceUID = generate_uid()
 
