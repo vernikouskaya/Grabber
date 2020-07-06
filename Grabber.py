@@ -9,18 +9,6 @@ from DicomWriter import DicomWriter
 
 import os.path
 
-
-filename = './logFile.log'
-if os.path.isfile(filename):
-    open(filename, "w").close()
-
-logger = logging.getLogger('logFile')
-hdlr = logging.FileHandler('./logFile.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.WARNING)
-
 class Grabber:
 
     def __init__(self, input=0):
@@ -464,6 +452,19 @@ class Grabber:
 
 if __name__ == '__main__':
     folder = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # filename = './logFile.log'
+    # if os.path.isfile(filename):
+    #     open(filename, "w").close()
+
+    logger = logging.getLogger('logFile')
+    filename = './logFile_' + folder + '.log'
+    hdlr = logging.FileHandler(filename)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr)
+    logger.setLevel(logging.WARNING)
+
     writer = DicomWriter()
     writer.initialize(folder)
     grabber = Grabber(input=0)
