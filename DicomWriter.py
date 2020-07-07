@@ -40,6 +40,7 @@ class DicomWriter:
             if not os.path.exists(self.newFolder):
                 os.makedirs(self.newFolder)
                 #self.ds.SeriesInstanceUID = generate_uid()
+                self.ds.SeriesNumber = self.count
                 self.count += 1
                 self.frameNumber = 0
 
@@ -71,7 +72,8 @@ class DicomWriter:
 
         # table position demonstrator
         self.ds.StudyID = str(height)               # vertical table pos
-        self.ds.SeriesNumber = long        # longitudinal table pos
+        #self.ds.SeriesNumber = long        # longitudinal table pos
+        self.ds.AccessionNumber = str(long)  # longitudinal table pos
         self.ds.AcquisitionNumber = lat   # lateral table pos
 
         # table position original
@@ -127,7 +129,6 @@ class DicomWriter:
         ds.StudyTime = '0'
         ds.PositionerSecondaryAngle = "0.0"
 
-        ds.AccessionNumber = ''
         ds.Modality = 'XA'
         ds.Manufacturer = ''
         ds.ReferringPhysicianName = ''
@@ -140,8 +141,9 @@ class DicomWriter:
         ds.DistanceSourceToDetector = "1200.0"  #own + original
         ds.StudyInstanceUID = generate_uid()
         ds.SeriesInstanceUID = generate_uid()
+        ds.SeriesNumber = "1"
         ds.StudyID = '0'
-        ds.SeriesNumber = "-760"
+        ds.AccessionNumber = '-760'
         ds.AcquisitionNumber = "-110"
         #ds.InstanceNumber = "1"
         #ds.ImagePositionPatient = [0, 113.272698, 0]
