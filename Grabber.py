@@ -33,7 +33,7 @@ class Grabber:
         self.FD = 15
         self.pxlSpacing = [0.110726, 0.110726]
         self.cutImage = True
-        self.uncutOnce = False
+        #self.uncutOnce = False
         self.HKL = '3'
         self.SPD = 765
 
@@ -170,7 +170,7 @@ class Grabber:
     def invalid_character(self, description, third = None, second = None, first = None):
         if first == -999 or second == -999 or third == -999:
             #print("invalid character: ", description)
-            self.uncutOnce = True
+            #self.uncutOnce = True
             logger.error('character ' + description + ' is not recognized')
 
             return 0
@@ -348,12 +348,13 @@ class Grabber:
                         writeNewFolder = False
 
                     if self.cutImage:
-                        if not self.uncutOnce:
-                            gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
-                        else:
-                            gray_DICOM = gray_cut
-                            self.uncutOnce = False
-
+                        gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(
+                                    self.geometrySize + self.imageWidthCut)]  # cut geometry panel before saving
+                        # if not self.uncutOnce:
+                        #     gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
+                        # else:
+                        #     gray_DICOM = gray_cut
+                        #     self.uncutOnce = False
                     else:
                         gray_DICOM = gray_cut
                     # timeBefore = time.time()
