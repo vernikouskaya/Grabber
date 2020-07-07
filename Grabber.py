@@ -112,7 +112,7 @@ class Grabber:
 
         #cv2.imshow("binary", binary_image_out)
         #cv2.imwrite('row.png', row)
-        #cv2.imwrite('binary.png, binary_image_out)
+        #cv2.imwrite('binary.png', binary_image_out)
         return binary_image_out
 
     # HKL3
