@@ -2,7 +2,6 @@
 # Produced by pydicom codify utility script
 from __future__ import unicode_literals  # Only for python2.7 and save_as unicode filename
 
-from datetime import datetime
 import os
 
 import pydicom
@@ -30,7 +29,7 @@ class DicomWriter:
         self.index = idx
 
 
-    def write(self, writeFolder, pixelData, primAngle, secAngle, long, lat, height, SID, SPD, FD, pxlSpacing):        ##not forget spacing!!!
+    def write(self, writeFolder, datetimeNow, pixelData, primAngle, secAngle, long, lat, height, SID, SPD, FD, pxlSpacing):        ##not forget spacing!!!
 
         if writeFolder:
             if int(primAngle) >= 0:
@@ -54,7 +53,6 @@ class DicomWriter:
                 self.frameNumber = 0
 
         # File meta info data elements
-        datetimeNow = datetime.now()
         #self.ds.InstanceCreationDate = datetimeNow.strftime("%Y%m%d")   #grabbing date
         #self.ds.InstanceCreationTime = datetimeNow.strftime("%H%M%S.%f")  #grabbing time
 

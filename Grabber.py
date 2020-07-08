@@ -2,6 +2,7 @@ import math
 import time
 from datetime import datetime
 
+
 import cv2
 import numpy as np
 import logging
@@ -320,6 +321,7 @@ class Grabber:
         if not (ret):
             print("frame not grabbed")
         else:
+            #timeStart = time.time()
             gray = cv2.cvtColor(read, cv2.COLOR_BGR2GRAY)
             gray_cut, geometry = self.clip(gray)
 
@@ -339,7 +341,10 @@ class Grabber:
 
             # distinguish and calculate geometry parameters
             self.recognize_characters(geometry, firstRowFirst, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
-
+            # timeEnd = time.time()
+            # timeDiff = timeEnd- timeStart
+            # if (self.numFrames % self.statDelay == 0):
+            #     print("timeOCR", timeDiff)
 
         return gray_cut
 
@@ -349,9 +354,15 @@ def runGrabber(idx):
     XRsign_prev = False
     timeStart = time.time()
     timeLast = timeStart
+    grabTime = 0
 
     while True:
+        #timeToStart = time.time()
+        datetimeGrab = datetime.now()
         image = grabber[idx].grab()
+        #timeToGrab = time.time()
+        #grabTime += timeToGrab - timeToStart
+
         if grabber[idx].maxXRsign >= 200:
             XRsign_now = True
             if XRsign_now and XRsign_prev == False:
@@ -362,8 +373,8 @@ def runGrabber(idx):
             image_cut = image[0:grabber[idx].imageHeightCut,
                              grabber[idx].geometrySize:(grabber[idx].geometrySize + grabber[idx].imageWidthCut)]  # cut geometry panel before saving
 
-            writer[idx].write(writeNewFolder, np.ascontiguousarray(image_cut), str(grabber[idx].primAngle),
-                         str(grabber[idx].secAngle), grabber[0].long, grabber[0].lat, grabber[idx].height, str(grabber[idx].SID), grabber[idx].SPD,
+            writer[idx].write(writeNewFolder, datetimeGrab, np.ascontiguousarray(image_cut), str(grabber[idx].primAngle),
+                         str(grabber[idx].secAngle), grabber[0].long, grabber[0].lat, grabber[0].height, str(grabber[idx].SID), grabber[idx].SPD,
                          str(grabber[idx].FD), grabber[idx].pxlSpacing)
         else:
             XRsign_now = False
@@ -376,6 +387,7 @@ def runGrabber(idx):
             timeDiff = timeNow - timeLast
             timeLast = timeNow
             print("FPS: ", grabber[idx].statDelay/timeDiff, 'for input: ', str(idx))
+            #print("grab time: ", grabTime / grabber[idx].numFrames)
         #time.sleep(0.0000041)
 
 if __name__ == '__main__':
@@ -396,7 +408,7 @@ if __name__ == '__main__':
     grabber = []
     writer = []
 
-    threads = list()
+    #threads = list()
     for idx in range(int(inputPort)):
             if idx == 0:
                 print("press y for frontal:")
@@ -421,8 +433,8 @@ if __name__ == '__main__':
     for idx in range(int(inputPort)):
         x = threading.Thread(target=runGrabber, args=(idx,))
         #x.setDaemon(True)
-        threads.append(x)
+        #threads.append(x)
         x.start()
 
-    for thread in enumerate(threads):
-        thread.join()
+    # for thread in enumerate(threads):
+    #     thread.join()
