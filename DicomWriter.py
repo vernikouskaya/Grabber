@@ -21,11 +21,14 @@ class DicomWriter:
         self.folderName = 'data'
         self.newFolder = 'data'
         self.count = 1
+        self.index = 0
 
-    def initialize(self, folderName):
+    def initialize(self, folderName, idx):
         self.folderName = folderName
         if not os.path.exists(self.folderName):
             os.makedirs(self.folderName)
+        self.index = idx
+
 
     def write(self, writeFolder, pixelData, primAngle, secAngle, long, lat, height, SID, SPD, FD, pxlSpacing):        ##not forget spacing!!!
 
@@ -36,7 +39,13 @@ class DicomWriter:
             else:
                 angle = 'RAO'
                 angleToWrite = -int(primAngle)
-            self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite)
+            if self.index == 0:
+                self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite)
+            if self.index == 1:
+                self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite) + '_frontal'
+            if self.index == 2:
+                self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite) + '_lateral'
+
             if not os.path.exists(self.newFolder):
                 os.makedirs(self.newFolder)
                 #self.ds.SeriesInstanceUID = generate_uid()

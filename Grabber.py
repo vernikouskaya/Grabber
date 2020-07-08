@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import logging
 from DicomWriter import DicomWriter
+import threading
 
 class Grabber:
 
@@ -32,12 +33,32 @@ class Grabber:
         self.SID = 1200
         self.FD = 15
         self.pxlSpacing = [0.110726, 0.110726]
-        self.cutImage = True
-        #self.uncutOnce = False
         self.HKL = '3'
         self.SPD = 765
 
-    def initialize(self):
+    def select_videoPort(self):
+        index = 0
+        cap = cv2.VideoCapture(index)
+        if not (cap.isOpened()):
+            print("Video capture can't be open")
+            return
+        while True:
+            _, frame = cap.read()
+            cv2.imshow('frame', frame)
+            key = cv2.waitKey(1)
+            if key & 0xFF == ord('n'):
+                cap.release()
+                index += 1
+                cap = cv2.VideoCapture(index)
+                if not (cap.isOpened()):
+                    print("Video capture can't be open")
+            if key & 0xFF == ord('y'):
+                self.input = index
+                cap.release()
+                cv2.destroyAllWindows()
+                break
+
+    def initialize(self, inputHKL):
         self.select_videoPort()
         print("initializing grabber on interface #", self.input)
         self.capture = cv2.VideoCapture(self.input)
@@ -45,15 +66,7 @@ class Grabber:
             print("Video capture can't be open")
         else:
             self.initialized = True
-            inputHKL = input('in which HKL measurements are performed [3 or 4]: ')
-            if inputHKL == '3' or inputHKL == '4':
-                self.HKL = inputHKL
-            if self.HKL == '3':
-                self.SPD = 765  # for lateral C-arm and monoplane system
-            else:
-                self.SPD = 810  # for frontal C-arm
-
-            print('frame capturing is initialized for HKL', self.HKL)
+            self.HKL = inputHKL
 
     def destroy(self):
         cv2.destroyAllWindows()
@@ -89,7 +102,7 @@ class Grabber:
         self.maxXRsign = np.amax(live) # 246 - for white, 75 - for gray
         #cv2.imwrite('XRsign.png', live)
 
-        cv2.imshow('gray', image)
+        #cv2.imshow('gray '+ str(self.input), image)
         #cv2.imshow('gray_cut', image_cut)
         #cv2.imshow('geometry', geometry)
 
@@ -169,10 +182,7 @@ class Grabber:
 
     def invalid_character(self, description, third = None, second = None, first = None):
         if first == -999 or second == -999 or third == -999:
-            #print("invalid character: ", description)
-            #self.uncutOnce = True
             logger.error('character ' + description + ' is not recognized')
-
             return 0
 
     def extract_values_from_row(self, geometry, number, yCoord):
@@ -301,151 +311,75 @@ class Grabber:
         return
 
     def grab(self):
-
-        XRsign_now = False
-        XRsign_prev = False
-        gray_DICOM_now = np.zeros((1000, 1000)) # for cut image
-
         if not (self.initialized):
             print("grabber is not initialized!")
             return
-        print("Grab image from input #", self.input)
-        print("geometry is cut away when storing images, please press 'c' within the image window to store whole images")
+        #print("Grab image from input #", self.input)
 
-        timeStart = time.time()
-        timeLast = timeStart
+        ret, read = self.capture.read()
+        if not (ret):
+            print("frame not grabbed")
+        else:
+            gray = cv2.cvtColor(read, cv2.COLOR_BGR2GRAY)
+            gray_cut, geometry = self.clip(gray)
 
-        while (True):
-            ret, read = self.capture.read()
-            if not (ret):
-                print("frame not grabbed")
+            init_template = 10
+            template_shift = 49
+
+            # geometry_new = np.copy(geometry)
+            # geometry_new = cv2.circle(geometry_new, (243, 9), 1, [255, 0, 0], -1)
+            # cv2.imwrite("LAOTable.png", geometry_new)
+
+            firstRowFirst, firstRowSec, firstRowThird = self.extract_values_from_row(geometry, 3, init_template)                     # (LAO/RAO)
+            self.fontSet = self.font
+            secondRowFirst, secondRowSec, secondRowThird = self.extract_values_from_row(geometry, 3, init_template + template_shift)  # (KAUD/CRAN)
+            thirdRowFirst, thirdRowSec, thirdRowThird = self.extract_values_from_row(geometry, 3, init_template + 2*template_shift)  # (TableHigh)
+            forthRowFirst, forthRowSec, forthRowThird = self.extract_values_from_row(geometry, 3, init_template + 3*template_shift)  # (SID)
+            fifthRowSec, fifthRowThird = self.extract_values_from_row(geometry, 2, init_template + 4*template_shift)  # (FD)
+
+            # distinguish and calculate geometry parameters
+            self.recognize_characters(geometry, firstRowFirst, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
+
+
+        return gray_cut
+
+def runGrabber(idx):
+
+    XRsign_now = False
+    XRsign_prev = False
+    timeStart = time.time()
+    timeLast = timeStart
+
+    while True:
+        image = grabber[idx].grab()
+        if grabber[idx].maxXRsign >= 200:
+            XRsign_now = True
+            if XRsign_now and XRsign_prev == False:
+                writeNewFolder = True
             else:
-                gray = cv2.cvtColor(read, cv2.COLOR_BGR2GRAY)
-                gray_cut, geometry = self.clip(gray)
+                writeNewFolder = False
 
-                init_template = 10
-                template_shift = 49
+            image_cut = image[0:grabber[idx].imageHeightCut,
+                             grabber[idx].geometrySize:(grabber[idx].geometrySize + grabber[idx].imageWidthCut)]  # cut geometry panel before saving
 
-                # geometry_new = np.copy(geometry)
-                # geometry_new = cv2.circle(geometry_new, (243, 9), 1, [255, 0, 0], -1)
-                # cv2.imwrite("LAOTable.png", geometry_new)
-
-                firstRowFirst, firstRowSec, firstRowThird = self.extract_values_from_row(geometry, 3, init_template)                     # (LAO/RAO)
-                self.fontSet = self.font
-                secondRowFirst, secondRowSec, secondRowThird = self.extract_values_from_row(geometry, 3, init_template + template_shift)  # (KAUD/CRAN)
-                thirdRowFirst, thirdRowSec, thirdRowThird = self.extract_values_from_row(geometry, 3, init_template + 2*template_shift)  # (TableHigh)
-                forthRowFirst, forthRowSec, forthRowThird = self.extract_values_from_row(geometry, 3, init_template + 3*template_shift)  # (SID)
-                fifthRowSec, fifthRowThird = self.extract_values_from_row(geometry, 2, init_template + 4*template_shift)  # (FD)
-
-                # distinguish and calculate geometry parameters
-                self.recognize_characters(geometry, firstRowFirst, firstRowSec, firstRowThird, secondRowFirst, secondRowSec, secondRowThird,thirdRowFirst, thirdRowSec, thirdRowThird, forthRowFirst, forthRowSec, forthRowThird, fifthRowSec, fifthRowThird)
-
-                if self.maxXRsign >= 200:
-                    XRsign_now = True
-                    if XRsign_now and XRsign_prev == False:
-                        writeNewFolder = True
-                    else:
-                        writeNewFolder = False
-
-                    if self.cutImage:
-                        gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(
-                                    self.geometrySize + self.imageWidthCut)]  # cut geometry panel before saving
-                        # if not self.uncutOnce:
-                        #     gray_DICOM = gray_cut[0:self.imageHeightCut, self.geometrySize:(self.geometrySize + self.imageWidthCut)] # cut geometry panel before saving
-                        # else:
-                        #     gray_DICOM = gray_cut
-                        #     self.uncutOnce = False
-                    else:
-                        gray_DICOM = gray_cut
-                    # timeBefore = time.time()
-
-                    # if not self.compare_images(gray_DICOM_now, gray_DICOM):
-                    #     gray_DICOM_now = gray_DICOM
-                    #     writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM_now), str(self.primAngle),
-                    #                  str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
-                    #                  str(self.FD), self.pxlSpacing)
-                    # else:
-                    #     gray_DICOM_now = gray_DICOM_now
-                    #timeAfter = time.time()
-                    #print('comparison_time: ', timeAfter - timeBefore) #takes 10 to 15ms
-                    writer.write(writeNewFolder, np.ascontiguousarray(gray_DICOM), str(self.primAngle),
-                                 str(self.secAngle), self.long, self.lat, self.height, str(self.SID), self.SPD,
-                                 str(self.FD), self.pxlSpacing)
-                else:
-                    XRsign_now = False
-
-                XRsign_prev = XRsign_now
-
-                self.numFrames += 1
-
-            if (self.numFrames % self.statDelay == 0):
-                timeNow = time.time()
-                timeDiff = timeNow - timeLast
-                timeLast = timeNow
-                print("FPS: ", self.statDelay/timeDiff)
-            key = cv2.waitKey(1)
-            if (key == ord('q')):
-                break
-            if (key == ord('c')):
-                self.cutImage = not self.cutImage
-                print("switched image clipping mode to ", self.cutImage)
-
-        timeEnd = time.time()
-        timeDiff = timeEnd - timeStart
-        print("total time: ", timeDiff)
-        print("total frames: ", self.numFrames)
-        print("average FPS: ", self.numFrames / timeDiff)
-
-    def mse(self, imageA, imageB):
-        # the 'Mean Squared Error' between the two images is the
-        # sum of the squared difference between the two images;
-        # NOTE: the two images must have the same dimension
-        if imageA.shape[0] > 0 & imageA.shape[0] == imageB.shape[0] & imageA.shape[1] > 0 & imageA.shape[1] == imageB.shape[1]:
-            err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
-            err /= float(imageA.shape[0] * imageA.shape[1])
-            # return the MSE, the lower the error, the more "similar"
-            # the two images are
+            writer[idx].write(writeNewFolder, np.ascontiguousarray(image_cut), str(grabber[idx].primAngle),
+                         str(grabber[idx].secAngle), grabber[0].long, grabber[0].lat, grabber[idx].height, str(grabber[idx].SID), grabber[idx].SPD,
+                         str(grabber[idx].FD), grabber[idx].pxlSpacing)
         else:
-            # two images have diff dimensions, return high mse value
-            err = 1
+            XRsign_now = False
 
-        return err
+        XRsign_prev = XRsign_now
 
-
-    def compare_images(self, imageA, imageB):
-        # compute the mean squared error and structural similarity
-        # index for the images
-        m = self.mse(imageA, imageB)
-        if m == 0.0:
-            return 1
-        else:
-            return 0
-        # If image is identical to itself, MSE = 0.0 and SSIM = 1.0.
-        # if MSE increases the images are less similar, as opposed to the SSIM where smaller values indicate less similarity
-
-    def select_videoPort(self):
-        index = 0
-        cap = cv2.VideoCapture(index)
-        if not (cap.isOpened()):
-            print("Video capture can't be open")
-            return
-        while True:
-            _, frame = cap.read()
-            cv2.imshow('frame', frame)
-            key = cv2.waitKey(1)
-            if key & 0xFF == ord('n'):
-                cap.release()
-                index += 1
-                cap = cv2.VideoCapture(index)
-                if not (cap.isOpened()):
-                    print("Video capture can't be open")
-            if key & 0xFF == ord('y'):
-                self.input = index
-                cap.release()
-                cv2.destroyAllWindows()
-                break
+        grabber[idx].numFrames += 1
+        if (grabber[idx].numFrames % grabber[idx].statDelay == 0):
+            timeNow = time.time()
+            timeDiff = timeNow - timeLast
+            timeLast = timeNow
+            print("FPS: ", grabber[idx].statDelay/timeDiff, 'for input: ', str(idx))
+        #time.sleep(0.0000041)
 
 if __name__ == '__main__':
+
     folder = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     logger = logging.getLogger('logFile')
@@ -456,8 +390,39 @@ if __name__ == '__main__':
     logger.addHandler(hdlr)
     logger.setLevel(logging.WARNING)
 
-    writer = DicomWriter()
-    writer.initialize(folder)
-    grabber = Grabber(input=0)
-    grabber.initialize()
-    grabber.grab()
+    inputHKL = input('in which HKL measurements are performed [3 or 4]: ')
+    print('frame capturing is initialized for HKL', inputHKL)
+    inputPort = input('how many frame grabbers are used [1 or 2]: ')
+    grabber = []
+    writer = []
+
+    threads = list()
+    for idx in range(int(inputPort)):
+            if idx == 0:
+                print("press y for frontal:")
+            if idx == 1:
+                print("press y for lateral:")
+            gr = Grabber(input=0)
+            grabber.append(gr)
+            wr = DicomWriter()
+            writer.append(wr)
+            if idx == 0:
+                if inputPort == '1':
+                    writer[idx].initialize(folder, 0)
+                    grabber[idx].SPD = 765
+                if inputPort == '2':
+                    writer[idx].initialize(folder, 1)
+                    grabber[idx].SPD = 810
+            if idx == 1:
+                writer[idx].initialize(folder, 2)
+                grabber[idx].SPD = 765
+            grabber[idx].initialize(inputHKL)
+
+    for idx in range(int(inputPort)):
+        x = threading.Thread(target=runGrabber, args=(idx,))
+        #x.setDaemon(True)
+        threads.append(x)
+        x.start()
+
+    for thread in enumerate(threads):
+        thread.join()
