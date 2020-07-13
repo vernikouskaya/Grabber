@@ -36,6 +36,7 @@ class Grabber:
         self.pxlSpacing = [0.110726, 0.110726]
         self.HKL = '3'
         self.SPD = 765
+        self.countRun = 0
 
     def select_videoPort(self):
         index = 0
@@ -366,14 +367,20 @@ def runGrabber(idx):
         if grabber[idx].maxXRsign >= 200:
             XRsign_now = True
             if XRsign_now and XRsign_prev == False:
-                writeNewFolder = True
-            else:
-                writeNewFolder = False
+                if int(inputPort) > 1:
+                    count = max(grabber[0].countRun, grabber[1].countRun)
+                else:
+                    count = grabber[0].countRun
+                count += 1
+                for i in range(int(inputPort)):
+                    grabber[i].countRun = count
+                    writer[i].changeFolder(count, grabber[i].primAngle)
+
 
             image_cut = image[0:grabber[idx].imageHeightCut,
                              grabber[idx].geometrySize:(grabber[idx].geometrySize + grabber[idx].imageWidthCut)]  # cut geometry panel before saving
 
-            writer[idx].write(writeNewFolder, datetimeGrab, np.ascontiguousarray(image_cut), str(grabber[idx].primAngle),
+            writer[idx].write(grabber[idx].countRun, datetimeGrab, np.ascontiguousarray(image_cut), str(grabber[idx].primAngle),
                          str(grabber[idx].secAngle), grabber[0].long, grabber[0].lat, grabber[0].height, str(grabber[idx].SID), grabber[idx].SPD,
                          str(grabber[idx].FD), grabber[idx].pxlSpacing)
         else:

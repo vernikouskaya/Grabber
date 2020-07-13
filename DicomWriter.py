@@ -19,7 +19,6 @@ class DicomWriter:
         self.frameNumber = 0
         self.folderName = 'data'
         self.newFolder = 'data'
-        self.count = 1
         self.index = 0
 
     def initialize(self, folderName, idx):
@@ -28,38 +27,36 @@ class DicomWriter:
             os.makedirs(self.folderName)
         self.index = idx
 
+    def changeFolder(self, countRun, primAngle):
+        if int(primAngle) >= 0:
+            angle = 'LAO'
+            angleToWrite = int(primAngle)
+        else:
+            angle = 'RAO'
+            angleToWrite = -int(primAngle)
+        if self.index == 0:
+            self.newFolder = self.folderName + '/' + str(countRun) + '_' + angle + str(angleToWrite)
+        if self.index == 1:
+            self.newFolder = self.folderName + '/' + str(countRun) + '_' + angle + str(angleToWrite) + '_frontal'
+        if self.index == 2:
+            self.newFolder = self.folderName + '/' + str(countRun) + '_' + angle + str(angleToWrite) + '_lateral'
 
-    def write(self, writeFolder, datetimeNow, pixelData, primAngle, secAngle, long, lat, height, SID, SPD, FD, pxlSpacing):        ##not forget spacing!!!
+    def write(self, countRun, datetimeNow, pixelData, primAngle, secAngle, long, lat, height, SID, SPD, FD, pxlSpacing):        ##not forget spacing!!!
 
-        if writeFolder:
-            if int(primAngle) >= 0:
-                angle = 'LAO'
-                angleToWrite = int(primAngle)
-            else:
-                angle = 'RAO'
-                angleToWrite = -int(primAngle)
-            if self.index == 0:
-                self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite)
-            if self.index == 1:
-                self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite) + '_frontal'
-            if self.index == 2:
-                self.newFolder = self.folderName + '/' + str(self.count) + '_' + angle + str(angleToWrite) + '_lateral'
-
-            if not os.path.exists(self.newFolder):
-                os.makedirs(self.newFolder)
-                #self.ds.SeriesInstanceUID = generate_uid()
-                self.ds.SeriesNumber = self.count
-                self.count += 1
-                self.frameNumber = 0
+        if not os.path.exists(self.newFolder):
+            os.makedirs(self.newFolder)
+            #self.ds.SeriesInstanceUID = generate_uid()
+            self.ds.SeriesNumber = countRun
+            self.frameNumber = 0
 
         # File meta info data elements
         #self.ds.InstanceCreationDate = datetimeNow.strftime("%Y%m%d")   #grabbing date
         #self.ds.InstanceCreationTime = datetimeNow.strftime("%H%M%S.%f")  #grabbing time
 
-        self.ds.AcquisitionDate = datetimeNow.strftime("%Y%m%d")  # grabbing date
+        #self.ds.AcquisitionDate = datetimeNow.strftime("%Y%m%d")  # grabbing date
         self.ds.AcquisitionTime = datetimeNow.strftime("%H%M%S.%f")[:-3]  # grabbing time
 
-        self.ds.ContentDate = datetimeNow.strftime("%Y%m%d")  # grabbing date
+        #self.ds.ContentDate = datetimeNow.strftime("%Y%m%d")  # grabbing date
         self.ds.ContentTime = datetimeNow.strftime("%H%M%S.%f")[:-3]  # grabbing time
 
         self.ds.SeriesInstanceUID = generate_uid()
